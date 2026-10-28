@@ -1,0 +1,3438 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ColonyLab: Bio-Dota - Битва Древних Штаммов</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #05080c;
+      color: #e2e8f0;
+      user-select: none;
+    }
+    .font-dota { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    .dota-card {
+      background: radial-gradient(circle at top, rgba(26, 34, 46, 0.95), rgba(10, 14, 20, 0.98));
+      border: 1px solid rgba(180, 140, 75, 0.25);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    }
+    .dota-border { border: 1px solid rgba(197, 155, 88, 0.35); }
+    .dota-gold-glow { text-shadow: 0 0 10px rgba(234, 179, 8, 0.45); }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(10, 15, 22, 0.6); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.8); border-radius: 4px; }
+
+    input[type=range] { accent-color: #c59b58; }
+
+    @keyframes victory-drop {
+      0% { opacity: 0; transform: scale(2.4) translateY(-40px); filter: blur(12px); }
+      65% { opacity: 1; transform: scale(0.96) translateY(4px); filter: blur(0px); }
+      82% { transform: scale(1.03) translateY(-2px); }
+      100% { transform: scale(1) translateY(0); }
+    }
+    @keyframes victory-ray-spin {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    @keyframes victory-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes victory-badge-pulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px currentColor); }
+      50% { transform: scale(1.09); filter: drop-shadow(0 0 35px currentColor); }
+    }
+    @keyframes screen-shake {
+      0%, 100% { transform: translate(0, 0); }
+      15% { transform: translate(-6px, 5px); }
+      30% { transform: translate(5px, -5px); }
+      45% { transform: translate(-4px, 3px); }
+      60% { transform: translate(3px, -2px); }
+      75% { transform: translate(-2px, 1px); }
+    }
+
+    .animate-victory-card { animation: victory-drop 0.85s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards; }
+    .animate-ray-spin { animation: victory-ray-spin 26s linear infinite; }
+    .animate-badge-pulse { animation: victory-badge-pulse 2.2s ease-in-out infinite; }
+    .screen-shake-effect { animation: screen-shake 0.65s ease-out; }
+    .shimmer-text { background-size: 200% auto; animation: victory-shimmer 3.5s linear infinite; }
+
+    @keyframes sly-float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-7px) rotate(2deg); }
+    }
+    @keyframes sly-eye-glint {
+      0%, 75%, 100% { opacity: 0; transform: scale(0.4); }
+      80%, 90% { opacity: 1; transform: scale(1.3); }
+    }
+    @keyframes sly-smoke {
+      0% { opacity: 0.8; transform: translate(0, 0) scale(0.6); }
+      100% { opacity: 0; transform: translate(-10px, -24px) scale(1.6); }
+    }
+    @keyframes sly-spore-bubble {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px currentColor); }
+      50% { transform: scale(1.25); filter: drop-shadow(0 0 16px currentColor); }
+    }
+
+    .animate-sly-bacterium { animation: sly-float 3.4s ease-in-out infinite; }
+    .animate-sly-glint { animation: sly-eye-glint 3.2s ease-in-out infinite; }
+    .animate-sly-smoke { animation: sly-smoke 2s ease-out infinite; }
+    .animate-sly-spores { animation: sly-spore-bubble 2.2s ease-in-out infinite; }
+
+    .rays-background {
+      background: repeating-conic-gradient(
+        from 0deg,
+        rgba(255, 255, 255, 0.12) 0deg 10deg,
+        transparent 10deg 20deg
+      );
+    }
+  </style>
+</head>
+<body class="h-screen max-h-screen w-screen overflow-hidden flex flex-col bg-[#06090e] text-slate-100">
+
+  <!-- Шапка в стиле Dota 2 HUD -->
+  <header class="border-b border-[#2d2319] bg-[#0c1017]/95 backdrop-blur px-3 py-1.5 sm:px-4 flex items-center justify-between gap-2 shrink-0 z-30 shadow-2xl h-12 sm:h-14">
+    <div class="flex items-center space-x-2.5">
+      <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-tr from-amber-700 via-amber-600 to-yellow-500 flex items-center justify-center shadow-lg shadow-amber-600/30 border border-amber-400/40">
+        <i class="fa-solid fa-shield-halved text-slate-950 text-xs sm:text-sm"></i>
+      </div>
+      <div>
+        <h1 class="text-xs sm:text-sm font-extrabold tracking-wider text-amber-200 font-dota flex items-center gap-1.5">
+          BIODOTA <span class="text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 font-mono border border-amber-500/30 font-normal">v3.6 Balanced</span>
+        </h1>
+        <p class="text-[10px] text-slate-400 hidden md:block">Тактическое противостояние штаммов: Radiant против Dire</p>
+      </div>
+    </div>
+
+    <!-- Метрики фракций -->
+    <div class="flex items-center gap-2 md:gap-3 font-mono text-xs overflow-x-auto py-0.5">
+      <div class="bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-lg flex items-center gap-1.5 shadow-inner">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]"></span>
+        <span class="text-emerald-300 font-bold font-dota text-xs">RADIANT:</span>
+        <span id="stat-alpha" class="font-bold text-emerald-100 text-xs sm:text-sm">0</span>
+      </div>
+      <div class="bg-rose-950/60 border border-rose-500/40 px-2 py-0.5 rounded-lg flex items-center gap-1.5 shadow-inner">
+        <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_#f43f5e]"></span>
+        <span class="text-rose-300 font-bold font-dota text-xs">DIRE:</span>
+        <span id="stat-beta" class="font-bold text-rose-100 text-xs sm:text-sm">0</span>
+      </div>
+      <div class="bg-[#121822] border border-amber-600/30 px-2 py-0.5 rounded-lg flex items-center gap-1">
+        <i class="fa-regular fa-clock text-amber-400 text-xs"></i>
+        <span id="stat-time" class="font-bold text-amber-300 text-xs">00:00</span>
+      </div>
+    </div>
+
+    <!-- Управление матчем -->
+    <div class="flex items-center space-x-1.5 sm:space-x-2">
+      <div class="flex items-center bg-[#131922] border border-slate-700/80 rounded-lg p-0.5 text-xs font-mono">
+        <button data-speed="0.5" class="speed-btn px-1.5 py-0.5 rounded text-slate-400 hover:text-white transition">0.5x</button>
+        <button data-speed="1" class="speed-btn px-1.5 py-0.5 rounded bg-amber-600/90 text-amber-100 font-bold transition shadow">1x</button>
+        <button data-speed="2" class="speed-btn px-1.5 py-0.5 rounded text-slate-400 hover:text-white transition">2x</button>
+        <button data-speed="4" class="speed-btn px-1.5 py-0.5 rounded text-slate-400 hover:text-white transition">4x</button>
+      </div>
+
+      <button id="btn-toggle-sound" class="p-1.5 sm:p-2 rounded-lg bg-[#141b24] hover:bg-slate-700 text-amber-400 border border-amber-500/30 transition shadow" title="Звуковые эффекты">
+        <i class="fa-solid fa-volume-high text-xs sm:text-sm" id="sound-icon"></i>
+      </button>
+      <button id="btn-play-pause" class="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 font-bold text-xs text-white transition flex items-center gap-1 shadow-md shadow-amber-900/40 border border-amber-400/40 font-dota">
+        <i class="fa-solid fa-play text-xs" id="play-icon"></i>
+        <span id="play-text">Старт</span>
+      </button>
+      <button id="btn-reset" class="px-2.5 py-1 rounded-lg bg-[#141b24] hover:bg-rose-950/60 hover:text-rose-200 border border-slate-700/80 font-medium text-xs text-slate-300 transition flex items-center gap-1">
+        <i class="fa-solid fa-rotate-left text-xs"></i>
+        <span class="hidden sm:inline">Сброс</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Рабочее пространство -->
+  <main class="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden p-2 gap-2">
+    
+    <!-- Левая панель: Инструменты, ТТХ Видов, Инспектор -->
+    <div class="w-full lg:w-64 flex flex-col gap-2 shrink-0 order-2 lg:order-1 custom-scrollbar overflow-y-auto h-full max-h-full">
+      
+      <!-- Панель инструментов и читов -->
+      <div class="dota-card rounded-xl p-2.5">
+        <div class="flex items-center justify-between mb-1.5">
+          <h2 class="text-[11px] uppercase font-bold text-amber-300 tracking-wider flex items-center gap-1.5 font-dota">
+            <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Инструменты
+          </h2>
+          <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-950/80 px-1.5 py-0.5 rounded-lg border border-slate-800 hover:border-amber-500/40 transition">
+            <span class="text-[9px] text-amber-200/80 font-mono font-semibold">Читы:</span>
+            <input type="checkbox" id="toggle-cheats" class="sr-only peer">
+            <div class="w-7 h-3.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:rounded-full after:h-2.5 after:w-2.5 after:transition-all peer-checked:bg-amber-600 peer-checked:after:bg-white relative"></div>
+          </label>
+        </div>
+        <div id="cheat-tools-grid" class="grid grid-cols-2 gap-1.5 opacity-40 pointer-events-none transition-all duration-200">
+          <button data-tool="food" class="tool-btn flex flex-col items-center justify-center p-1.5 rounded-lg border border-slate-800 bg-slate-800/40 hover:bg-slate-800 text-amber-300 transition">
+            <i class="fa-solid fa-gem text-xs mb-0.5"></i>
+            <span class="text-[10px] font-medium">Руна питания</span>
+          </button>
+          <button data-tool="alpha" class="tool-btn flex flex-col items-center justify-center p-1.5 rounded-lg border border-slate-800 bg-slate-800/40 hover:bg-slate-800 text-emerald-400 transition">
+            <i class="fa-solid fa-bacterium text-xs mb-0.5"></i>
+            <span class="text-[10px] font-medium">Radiant</span>
+          </button>
+          <button data-tool="beta" class="tool-btn flex flex-col items-center justify-center p-1.5 rounded-lg border border-slate-800 bg-slate-800/40 hover:bg-slate-800 text-rose-400 transition">
+            <i class="fa-solid fa-virus text-xs mb-0.5"></i>
+            <span class="text-[10px] font-medium">Dire</span>
+          </button>
+          <button data-tool="antibiotic" class="tool-btn flex flex-col items-center justify-center p-1.5 rounded-lg border border-slate-800 bg-slate-800/40 hover:bg-slate-800 text-purple-300 transition">
+            <i class="fa-solid fa-skull text-xs mb-0.5"></i>
+            <span class="text-[10px] font-medium">Осквернение</span>
+          </button>
+        </div>
+        <button data-tool="inspect" id="btn-inspect-tool" class="tool-btn active w-full mt-1.5 flex items-center justify-center gap-1.5 py-1 rounded-lg border border-amber-500 bg-amber-500/10 text-amber-300 transition">
+          <i class="fa-solid fa-microscope text-xs"></i>
+          <span class="text-[10px] font-medium">Инспектор / Клик: Пауза</span>
+        </button>
+        <div class="mt-1.5 text-[9px] text-slate-400 leading-tight bg-slate-950/70 p-1.5 rounded border border-slate-800/80" id="tool-hint">
+          Клик по полю: Пауза / Старт. Включите читы для ручного добавления рун и бактерий.
+        </div>
+      </div>
+
+      <!-- Сбалансированные ТТХ штаммов -->
+      <div id="tuning-panel" class="dota-card rounded-xl p-2.5 flex flex-col gap-1.5 transition-all duration-300 relative">
+        <div class="flex items-center justify-between">
+          <h2 class="text-[11px] uppercase font-bold text-amber-300 tracking-wider flex items-center gap-1 font-dota">
+            <i class="fa-solid fa-dna text-amber-400"></i> ТТХ Штаммов (Баланс ⚖️)
+          </h2>
+          <div class="flex items-center gap-1.5">
+            <span id="tuning-lock-badge" class="hidden text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
+              <i class="fa-solid fa-lock text-[8px]"></i> Блок
+            </span>
+            <button id="btn-reset-species-stats" class="text-[9px] text-amber-400 hover:underline">Сброс</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-1 p-0.5 bg-slate-950/90 rounded-lg border border-amber-900/40 text-[9px]">
+          <button data-tune-spec="warrior" class="tune-tab-btn py-0.5 px-0.5 rounded bg-amber-600/30 text-amber-300 font-semibold text-center border border-amber-500/40">⚔️ Воин</button>
+          <button data-tune-spec="forager" class="tune-tab-btn py-0.5 px-0.5 rounded text-slate-400 hover:text-white text-center">🌾 Фураж</button>
+          <button data-tune-spec="tank" class="tune-tab-btn py-0.5 px-0.5 rounded text-slate-400 hover:text-white text-center">🛡️ Кокк</button>
+          <button data-tune-spec="toxic" class="tune-tab-btn py-0.5 px-0.5 rounded text-slate-400 hover:text-white text-center">☣️ Токс</button>
+        </div>
+
+        <div id="tuning-controls-box" class="space-y-1.5 text-xs pt-0.5 transition-opacity">
+          <div>
+            <div class="flex justify-between text-[10px] mb-0.5">
+              <span class="text-slate-300">Подвижность:</span>
+              <span id="tune-val-speed" class="font-mono text-amber-300">1.15x</span>
+            </div>
+            <input id="tune-slider-speed" type="range" min="0.4" max="2.2" step="0.05" value="1.15" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[10px] mb-0.5">
+              <span class="text-slate-300">Боевой урон:</span>
+              <span id="tune-val-damage" class="font-mono text-rose-300">2.20x</span>
+            </div>
+            <input id="tune-slider-damage" type="range" min="0.5" max="4.0" step="0.05" value="2.20" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[10px] mb-0.5">
+              <span class="text-slate-300">Броня (получаемый урон):</span>
+              <span id="tune-val-defense" class="font-mono text-cyan-300">100%</span>
+            </div>
+            <input id="tune-slider-defense" type="range" min="0.2" max="1.5" step="0.05" value="1.0" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[10px] mb-0.5">
+              <span class="text-slate-300">Время жизни:</span>
+              <span id="tune-val-lifespan" class="font-mono text-emerald-300">100%</span>
+            </div>
+            <input id="tune-slider-lifespan" type="range" min="0.4" max="2.0" step="0.05" value="1.0" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
+          </div>
+        </div>
+
+        <div id="tuning-locked-notice" class="hidden text-[9px] text-amber-300/90 bg-amber-950/30 border border-amber-500/30 p-1 rounded text-center">
+          Матч идет: параметры видов зафиксированы.
+        </div>
+      </div>
+
+      <!-- Карточка инспектора -->
+      <div id="inspector-card" class="dota-card rounded-xl p-2.5 flex flex-col">
+        <h2 class="text-[11px] uppercase font-bold text-amber-300 tracking-wider mb-1 flex items-center gap-1.5 font-dota">
+          <i class="fa-solid fa-magnifying-glass text-amber-400"></i> Инспектор особи
+        </h2>
+        <div id="inspector-empty" class="text-[10px] text-slate-500 italic my-auto text-center py-2">
+          Кликните на бактерию или супер-бактерию для анализа.
+        </div>
+        <div id="inspector-data" class="hidden flex-col gap-1 text-[11px] font-mono">
+          <div class="flex justify-between border-b border-slate-800 pb-0.5">
+            <span class="text-slate-400">Фракция:</span>
+            <span id="insp-strain" class="text-emerald-400 font-bold">Radiant</span>
+          </div>
+          <div class="flex justify-between border-b border-slate-800 pb-0.5">
+            <span class="text-slate-400">Вид:</span>
+            <span id="insp-species" class="text-amber-300 font-bold">⚔️ Бацилла</span>
+          </div>
+          <div class="flex justify-between border-b border-slate-800 pb-0.5">
+            <span class="text-slate-400">Возраст:</span>
+            <span id="insp-age" class="text-slate-200">12с / 130с</span>
+          </div>
+          <div class="flex justify-between border-b border-slate-800 pb-0.5">
+            <span class="text-slate-400">Убито:</span>
+            <span id="insp-kills" class="text-amber-300 font-bold">0</span>
+          </div>
+          <div class="flex flex-col gap-0.5 border-b border-slate-800 pb-0.5">
+            <div class="flex justify-between text-[10px]">
+              <span class="text-slate-400">Энергия (HP):</span>
+              <span id="insp-energy-text" class="text-emerald-300">85%</span>
+            </div>
+            <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+              <div id="insp-energy-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 85%"></div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-0.5 border-b border-slate-800 pb-0.5 text-[10px]">
+            <span class="text-slate-400">Мутации опыта:</span>
+            <div id="insp-mutations" class="text-amber-300 font-mono text-[9px] leading-tight">Базовый геном</div>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Статус:</span>
+            <span id="insp-status" class="text-cyan-400">Поиск</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Центральная область арены -->
+    <div class="flex-1 min-w-0 min-h-0 flex items-center justify-center relative order-1 lg:order-2 h-full overflow-hidden">
+      <div id="petri-container" class="relative w-full h-full flex items-center justify-center p-1 overflow-hidden">
+        <div class="absolute inset-1 rounded-2xl border border-amber-600/30 shadow-[0_0_50px_rgba(0,0,0,0.85)] pointer-events-none z-10"></div>
+        <canvas id="simCanvas" class="rounded-2xl cursor-crosshair bg-[#060a0f] shadow-2xl block"></canvas>
+
+        <!-- Стартовое окно предстартовой подготовки -->
+        <div id="start-overlay" class="absolute inset-0 rounded-2xl pointer-events-none flex flex-col items-center justify-center text-center p-3 z-20 transition-all duration-300">
+          <div class="pointer-events-auto dota-card dota-border p-3.5 rounded-2xl shadow-2xl backdrop-blur-md max-w-xs flex flex-col items-center">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 to-yellow-400 flex items-center justify-center shadow-lg shadow-amber-500/30 mb-2 border border-amber-300 animate-pulse">
+              <i class="fa-solid fa-play text-slate-950 text-sm pl-0.5"></i>
+            </div>
+            <h2 class="font-extrabold text-amber-200 text-sm mb-1 font-dota tracking-wide">Битва Штаммов Готова</h2>
+            <p class="text-[10px] text-slate-300 mb-2 leading-snug">
+              Выберите штаммы команд ниже или кликните по кормушкам в углах:
+            </p>
+
+            <div class="grid grid-cols-2 gap-1.5 w-full mb-2.5">
+              <button id="start-pick-alpha" class="p-1.5 rounded-lg border border-emerald-500/50 bg-emerald-950/60 hover:bg-emerald-900/60 text-left transition flex items-center justify-between group">
+                <div class="flex items-center gap-1.5 truncate">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                  <div class="truncate">
+                    <span class="text-[8px] text-emerald-400/80 uppercase font-mono block">Radiant</span>
+                    <span id="start-alpha-name" class="text-[10px] font-bold text-emerald-200 truncate block">⚔️ Бацилла</span>
+                  </div>
+                </div>
+                <i class="fa-solid fa-pen text-[9px] text-emerald-400/70 group-hover:text-emerald-300 shrink-0 ml-1"></i>
+              </button>
+
+              <button id="start-pick-beta" class="p-1.5 rounded-lg border border-rose-500/50 bg-rose-950/60 hover:bg-rose-900/60 text-left transition flex items-center justify-between group">
+                <div class="flex items-center gap-1.5 truncate">
+                  <span class="w-2 h-2 rounded-full bg-rose-400 shrink-0"></span>
+                  <div class="truncate">
+                    <span class="text-[8px] text-rose-400/80 uppercase font-mono block">Dire</span>
+                    <span id="start-beta-name" class="text-[10px] font-bold text-rose-200 truncate block">🌾 Фуражир</span>
+                  </div>
+                </div>
+                <i class="fa-solid fa-pen text-[9px] text-rose-400/70 group-hover:text-rose-300 shrink-0 ml-1"></i>
+              </button>
+            </div>
+
+            <button id="btn-start-simulation" class="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-500 hover:from-amber-500 hover:to-yellow-500 font-bold text-xs text-slate-950 shadow-lg shadow-amber-600/30 transition transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-1.5 font-dota tracking-wider">
+              <i class="fa-solid fa-swords text-xs"></i>
+              <span>Начать битву</span>
+            </button>
+            <div class="mt-1.5 text-[9px] text-slate-400 flex items-center gap-1">
+              <i class="fa-solid fa-scale-balanced text-amber-400 text-[9px]"></i>
+              <span>Баланс: 100 на 100 (≤ 5 выживших)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Модалка выбора вида -->
+        <div id="feeder-modal" class="hidden absolute inset-0 rounded-2xl bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 z-50">
+          <div class="dota-card dota-border rounded-2xl max-w-sm w-full p-3.5 shadow-2xl relative">
+            <button id="feeder-modal-close" class="absolute top-2.5 right-2.5 text-slate-400 hover:text-white p-1">
+              <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+            <div class="flex items-center gap-2 mb-1.5">
+              <span id="modal-feeder-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_currentColor]"></span>
+              <h3 id="modal-feeder-title" class="font-bold text-amber-200 text-xs sm:text-sm font-dota">Выбор штамма</h3>
+            </div>
+            <p id="modal-feeder-desc" class="text-[10px] text-slate-400 mb-2.5">
+              Сбалансированные штаммы с равным боевым индексом (k = 2.20):
+            </p>
+            <div id="modal-species-list" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mb-2.5"></div>
+            <div class="flex justify-end gap-1.5">
+              <button id="btn-modal-cancel" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs">Закрыть</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Оверлей триумфа и послематчевой статистики -->
+        <div id="victory-modal" class="hidden absolute inset-0 rounded-2xl bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 z-40 overflow-hidden">
+          <canvas id="victoryFxCanvas" class="absolute inset-0 w-full h-full pointer-events-none z-0"></canvas>
+          <div id="victory-rays" class="absolute top-1/2 left-1/2 w-[720px] h-[720px] pointer-events-none z-0 rays-background animate-ray-spin opacity-20 rounded-full"></div>
+
+          <div id="victory-card-inner" class="relative z-10 dota-card dota-border rounded-2xl max-w-lg w-full p-3.5 sm:p-4 shadow-2xl flex flex-col items-center text-center max-h-[92vh] overflow-y-auto custom-scrollbar">
+            
+            <!-- Хитрый персонаж-победитель -->
+            <div id="victory-sly-character-box" class="w-full flex flex-col items-center mb-1.5">
+              <div class="relative w-36 h-28 sm:w-44 sm:h-32 flex items-center justify-center">
+                <div id="sly-character-aura" class="absolute w-16 h-14 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full blur-md opacity-25 transition-colors duration-500 pointer-events-none"></div>
+                <div id="sly-character-svg" class="relative z-10 w-full h-full flex items-center justify-center animate-sly-bacterium"></div>
+              </div>
+              <div class="relative max-w-sm mt-0.5 px-3 py-1 bg-slate-900/90 border border-amber-500/30 rounded-xl shadow-lg">
+                <span class="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-slate-900 border-t border-l border-amber-500/30 rotate-45"></span>
+                <p id="sly-character-quote" class="text-[10px] sm:text-[11px] text-amber-200 font-mono italic leading-tight">
+                  «Ха! Твой штамм даже не успел мутировать!»
+                </p>
+                <div id="sly-character-title" class="text-[9px] text-slate-400 font-dota font-bold uppercase tracking-wider mt-0.5">
+                  ⚔️ Хитрый Бацилла-Головорез
+                </div>
+              </div>
+            </div>
+
+            <div id="victory-banner-tag" class="text-[9px] font-mono tracking-[0.25em] uppercase font-bold px-3 py-0.5 rounded-full border mb-1 bg-slate-950/80 shadow-md">
+              ВЕЛИКИЙ ТРИУМФ ШТАММА
+            </div>
+            <h2 id="victory-title" class="text-base sm:text-xl font-black font-dota mb-0.5 tracking-wider shimmer-text">
+              ПОБЕДА RADIANT!
+            </h2>
+            <p id="victory-subtitle" class="text-[10px] sm:text-[11px] text-slate-300 mb-2 font-mono leading-relaxed max-w-md">
+              Вражеская колония полностью истреблена в ходе войны штаммов.
+            </p>
+
+            <div class="grid grid-cols-3 gap-1.5 w-full mb-2 font-mono text-[10px]">
+              <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-1 flex flex-col items-center">
+                <span class="text-slate-400 text-[8px]">Длительность</span>
+                <span id="victory-match-duration" class="font-bold text-amber-300 text-[11px]">01:45</span>
+              </div>
+              <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-1 flex flex-col items-center">
+                <span class="text-slate-400 text-[8px]">Причина победы</span>
+                <span id="victory-reason-badge" class="font-bold text-emerald-300 text-[10px]">Ликвидация</span>
+              </div>
+              <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-1 flex flex-col items-center">
+                <span class="text-slate-400 text-[8px]">Поколение</span>
+                <span id="victory-max-gen" class="font-bold text-cyan-300 text-[11px]">Gen 4</span>
+              </div>
+            </div>
+
+            <!-- ИНТЕРАКТИВНЫЙ БЛОК: КОЭФФИЦИЕНТЫ ПОСЛЕ СИМУЛЯЦИИ -->
+            <div class="w-full bg-slate-950/90 rounded-xl border border-amber-500/40 p-2 mb-2 text-left">
+              <div class="flex items-center justify-between text-[10px] font-dota font-bold text-amber-300 border-b border-slate-800/80 pb-1 mb-1.5 uppercase tracking-wider">
+                <span class="flex items-center gap-1.5">
+                  <i class="fa-solid fa-scale-balanced text-amber-400"></i> Коэффициенты сторон (Баланс ⚖️)
+                </span>
+                <span class="font-mono text-cyan-300 text-[9px] font-normal">Индекс силы k = 2.20</span>
+              </div>
+              <div id="victory-coefficients-grid" class="grid grid-cols-2 gap-2 text-[10px]">
+                <!-- Заполняется динамически в triggerMatchVictory() -->
+              </div>
+            </div>
+
+            <!-- График динамики матча -->
+            <div class="w-full bg-[#080d14] rounded-xl border border-slate-700/80 p-1.5 mb-2 flex flex-col">
+              <div class="flex items-center justify-between text-[9px] font-mono text-slate-400 mb-0.5">
+                <span class="text-amber-300 font-dota font-bold flex items-center gap-1">
+                  <i class="fa-solid fa-chart-line text-amber-400"></i> Хроника популяций
+                </span>
+                <span class="text-[8px] text-slate-400 font-mono">Alpha vs Beta</span>
+              </div>
+              <div class="relative w-full h-24 sm:h-28 bg-slate-950 rounded-lg overflow-hidden border border-slate-800">
+                <canvas id="victoryChartCanvas" class="w-full h-full block"></canvas>
+                <div class="absolute top-1 left-2 flex gap-3 text-[8px] font-mono pointer-events-none">
+                  <span class="text-emerald-400 font-bold flex items-center gap-1">
+                    <span class="w-2 h-0.5 bg-emerald-400 inline-block rounded"></span> Radiant
+                  </span>
+                  <span class="text-rose-400 font-bold flex items-center gap-1">
+                    <span class="w-2 h-0.5 bg-rose-400 inline-block rounded"></span> Dire
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Выбор противников на следующий раунд -->
+            <div class="w-full bg-slate-950/85 rounded-xl border border-amber-500/30 p-2 mb-2 text-left">
+              <div class="flex items-center justify-between text-[10px] font-dota font-bold text-amber-300 mb-1.5">
+                <span class="flex items-center gap-1.5">
+                  <i class="fa-solid fa-shuffle text-amber-400 text-[10px]"></i>
+                  <span>Штаммы для следующей битвы:</span>
+                </span>
+                <span class="text-[8px] font-mono text-slate-400">Кликните для быстрой смены</span>
+              </div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <button id="victory-pick-alpha" class="p-1.5 rounded-lg border border-emerald-500/50 bg-emerald-950/50 hover:bg-emerald-900/60 transition flex items-center justify-between group">
+                  <div class="flex items-center gap-1.5 truncate">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] shrink-0"></span>
+                    <div class="truncate">
+                      <span class="text-[8px] text-emerald-400 uppercase font-mono block leading-none">Radiant</span>
+                      <span id="victory-alpha-name" class="text-[10px] font-bold text-emerald-200 truncate block mt-0.5">⚔️ Бацилла-Воин</span>
+                    </div>
+                  </div>
+                  <i class="fa-solid fa-chevron-down text-[9px] text-emerald-400 group-hover:translate-y-0.5 transition shrink-0 ml-1"></i>
+                </button>
+                <button id="victory-pick-beta" class="p-1.5 rounded-lg border border-rose-500/50 bg-rose-950/50 hover:bg-rose-900/60 transition flex items-center justify-between group">
+                  <div class="flex items-center gap-1.5 truncate">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_6px_#f43f5e] shrink-0"></span>
+                    <div class="truncate">
+                      <span class="text-[8px] text-rose-400 uppercase font-mono block leading-none">Dire</span>
+                      <span id="victory-beta-name" class="text-[10px] font-bold text-rose-200 truncate block mt-0.5">🌾 Фуражир</span>
+                    </div>
+                  </div>
+                  <i class="fa-solid fa-chevron-down text-[9px] text-rose-400 group-hover:translate-y-0.5 transition shrink-0 ml-1"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex gap-2 w-full justify-center">
+              <button id="btn-close-victory" class="px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition border border-slate-700 flex items-center gap-1.5">
+                <i class="fa-solid fa-eye text-[11px]"></i>
+                <span>Изучить поле</span>
+              </button>
+              <button id="btn-new-simulation" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-500 hover:from-amber-500 hover:to-yellow-400 text-slate-950 text-xs font-extrabold font-dota shadow-lg shadow-amber-600/40 transition transform hover:scale-[1.03] active:scale-95 flex items-center gap-1.5 border border-amber-300">
+                <i class="fa-solid fa-swords text-[11px]"></i>
+                <span>Начать новую битву</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="pause-overlay" class="hidden absolute inset-0 rounded-2xl bg-slate-950/65 backdrop-blur-[2px] flex flex-col items-center justify-center text-center p-3 z-10 pointer-events-none">
+          <i class="fa-solid fa-circle-pause text-3xl text-amber-400 mb-1.5 animate-bounce"></i>
+          <p class="font-bold text-white text-sm font-dota">Битва на паузе</p>
+          <p class="text-[11px] text-slate-300">Нажмите «Старт» или клавишу Пробел</p>
+        </div>
+      </div>
+
+      <div id="lab-notification" class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-[#0d141e]/95 border border-amber-500/40 text-amber-200 text-xs px-3 py-1 rounded-full shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-20 flex items-center gap-1.5">
+        <i class="fa-solid fa-circle-info text-amber-400 text-xs"></i>
+        <span id="lab-notification-text">Готово</span>
+      </div>
+    </div>
+
+    <!-- Правая панель -->
+    <div class="w-full lg:w-72 flex flex-col gap-2 shrink-0 order-3 custom-scrollbar overflow-y-auto h-full max-h-full">
+      <div class="dota-card rounded-xl p-2.5">
+        <h2 class="text-[11px] uppercase font-bold text-amber-300 tracking-wider mb-1.5 flex items-center justify-between font-dota">
+          <span><i class="fa-solid fa-sliders text-amber-400 mr-1"></i> Параметры арены</span>
+          <button id="btn-default-params" class="text-[9px] text-amber-400 hover:underline lowercase font-normal">Сброс</button>
+        </h2>
+
+        <div class="space-y-2 text-xs">
+          <div>
+            <div class="flex justify-between text-[10px] mb-0.5">
+              <span class="text-slate-300">Продолжительность жизни:</span>
+              <span id="val-lifespan" class="font-mono text-emerald-400">130 сек</span>
+            </div>
+            <input id="slider-lifespan" type="range" min="30" max="300" step="10" value="130" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[10px] mb-0.5">
+              <span class="text-slate-300">Порог деления (энергия):</span>
+              <span id="val-repro" class="font-mono text-emerald-400">75%</span>
+            </div>
+            <input id="slider-repro" type="range" min="45" max="95" step="5" value="75" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[10px] mb-0.5">
+              <span class="text-slate-300">Интервал кормушек:</span>
+              <span id="val-feeder-int" class="font-mono text-amber-400">4.0 сек</span>
+            </div>
+            <input id="slider-feeder-int" type="range" min="1.5" max="8.0" step="0.5" value="4.0" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[10px] mb-0.5">
+              <span class="text-slate-300">Глобальный урон:</span>
+              <span id="val-damage" class="font-mono text-rose-400">1.8x</span>
+            </div>
+            <input id="slider-damage" type="range" min="0.3" max="2.5" step="0.1" value="1.8" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[10px] mb-0.5">
+              <span class="text-slate-300">Респаун рун биомассы:</span>
+              <span id="val-feeder" class="font-mono text-cyan-400">Умеренный</span>
+            </div>
+            <input id="slider-feeder" type="range" min="0" max="8" step="1" value="3" class="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer">
+          </div>
+        </div>
+      </div>
+
+      <div class="dota-card rounded-xl p-2.5 flex flex-col">
+        <h2 class="text-[11px] uppercase font-bold text-amber-300 tracking-wider mb-1 flex items-center justify-between font-dota">
+          <span><i class="fa-solid fa-chart-line text-amber-400 mr-1"></i> Война штаммов</span>
+          <span class="text-[9px] font-mono text-slate-400">Live</span>
+        </h2>
+
+        <div class="relative w-full h-24 bg-[#090d14] rounded-lg border border-slate-800/80 overflow-hidden mb-1.5">
+          <canvas id="chartCanvas" class="w-full h-full block"></canvas>
+          <div class="absolute top-1 left-2 flex flex-wrap gap-2 text-[9px] font-mono pointer-events-none">
+            <span class="text-emerald-400 flex items-center gap-1 font-bold">
+              <span class="w-2.5 h-0.5 bg-emerald-400 inline-block"></span> Radiant
+            </span>
+            <span class="text-rose-400 flex items-center gap-1 font-bold">
+              <span class="w-2.5 h-0.5 bg-rose-400 inline-block"></span> Dire
+            </span>
+          </div>
+        </div>
+
+        <div class="text-[10px] text-slate-400 leading-snug bg-slate-950/70 p-2 rounded-lg border border-amber-900/30 font-mono space-y-1">
+          <div class="font-bold text-amber-300 flex items-center gap-1 font-dota text-[11px]">
+            <i class="fa-solid fa-shield-halved text-amber-400"></i> Тактика Штаммов:
+          </div>
+          <div>• <span class="text-yellow-300">Приоритет №1</span> — тяга к корму (рост и деление).</div>
+          <div>• <span class="text-emerald-300">Охрана кормушки</span> — минимум 2 стража на разных полюсах для корма и деления.</div>
+          <div>• <span class="text-amber-400">Одиночки</span> избегают драки и убегают от врагов.</div>
+          <div>• <span class="text-purple-400">Штурм башни</span> — только если сила стаи &gt; 50% HP башни.</div>
+          <div>• <span class="text-rose-400">Кормушка врага</span> — может быть съедена целиком для мгновенной победы!</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    /* =========================================================================
+       ColonyLab v3.6: Fixed 1920x1080 Virtual World, 100 vs 100 Balanced Stats,
+       Victory Coefficients Grid, and Robust Single-File Architecture.
+       ========================================================================= */
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const chartCanvas = document.getElementById('chartCanvas');
+    const chartCtx = chartCanvas.getContext('2d');
+    const victoryChartCanvas = document.getElementById('victoryChartCanvas');
+    const victoryChartCtx = victoryChartCanvas.getContext('2d');
+
+    const VIRTUAL_WIDTH = 1920;
+    const VIRTUAL_HEIGHT = 1080;
+    let canvasDisplayWidth = 1920;
+    let canvasDisplayHeight = 1080;
+    let canvasScale = 1.0;
+
+    const CONFIG = {
+      lifespanSeconds: 130,
+      reproductionEnergyThreshold: 0.75,
+      feederInterval: 4.0,
+      feederBatchSize: 8,
+      autoFeedRate: 3,
+      combatDamageMultiplier: 1.8,
+      mobility: 1.1,
+      mutationRate: 0.12,
+      maxBacteria: 850,
+      baseEnergyCostPerSecond: 0.032,
+      divisionEnergyLoss: 0.45,
+      foodNutritionalValue: 0.45,
+      initialStrainCount: 16
+    };
+
+    // =========================================================================
+    // СБАЛАНСИРОВАННЫЕ ХАРАКТЕРИСТИКИ (100 VS 100: ВЫЖИВШИХ <= 5, ИНДЕКС k = 2.20)
+    // =========================================================================
+    const SPECIES_CONFIG = {
+      warrior: {
+        id: 'warrior',
+        name: 'Бацилла-Воин',
+        badge: '⚔️ Бацилла-Воин',
+        damageMult: 2.20,
+        defenseMult: 1.00,
+        speedBonus: 1.15,
+        reproThresholdBonus: 0.0,
+        lifespanMult: 1.00,
+        energyBurnMult: 1.10,
+        shape: 'rod'
+      },
+      forager: {
+        id: 'forager',
+        name: 'Фуражир-Спирохета',
+        badge: '🌾 Фуражир',
+        damageMult: 1.87,
+        defenseMult: 0.85,
+        speedBonus: 1.35,
+        reproThresholdBonus: -0.15,
+        lifespanMult: 1.15,
+        energyBurnMult: 0.85,
+        shape: 'slender'
+      },
+      tank: {
+        id: 'tank',
+        name: 'Броне-Кокк',
+        badge: '🛡️ Броне-Кокк',
+        damageMult: 1.21,
+        defenseMult: 0.55,
+        speedBonus: 0.75,
+        reproThresholdBonus: 0.08,
+        lifespanMult: 1.35,
+        energyBurnMult: 0.90,
+        shape: 'sphere'
+      },
+      toxic: {
+        id: 'toxic',
+        name: 'Токсичная Псевдомонада',
+        badge: '☣️ Токсик',
+        damageMult: 1.70,
+        defenseMult: 0.85,
+        deathBurstDamage: 0.22,
+        speedBonus: 0.95,
+        reproThresholdBonus: -0.05,
+        lifespanMult: 0.95,
+        energyBurnMult: 1.00,
+        shape: 'spiky'
+      }
+    };
+
+    const DEFAULT_SPECIES_STATS = JSON.parse(JSON.stringify(SPECIES_CONFIG));
+
+    let currentAlphaSpecies = 'warrior';
+    let currentBetaSpecies = 'forager';
+
+    let isRunning = false;
+    let simStarted = false;
+    let matchEnded = false;
+    let timeScale = 1.0;
+    let cheatsEnabled = false;
+    let currentTool = 'inspect';
+    let selectedBacterium = null;
+    let activeTuningSpecies = 'warrior';
+    let isAudioEnabled = true;
+    let audioCtx = null;
+    let isMouseDown = false;
+    let pointerDownPos = { x: 0, y: 0 };
+    let simulationTime = 0;
+    let highestGeneration = 1;
+
+    // Звуковой синтезатор Web Audio API
+    function initAudio() {
+      if (!isAudioEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      } catch (e) {}
+    }
+
+    function playTone(type) {
+      if (!isAudioEnabled || !audioCtx) return;
+      try {
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'eat') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(540, now + 0.08);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.08);
+          osc.start(now); osc.stop(now + 0.08);
+        } else if (type === 'divide') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(420, now);
+          osc.frequency.exponentialRampToValueAtTime(780, now + 0.12);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.12);
+          osc.start(now); osc.stop(now + 0.12);
+        } else if (type === 'clash') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, now);
+          osc.frequency.linearRampToValueAtTime(80, now + 0.05);
+          gain.gain.setValueAtTime(0.03, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.05);
+          osc.start(now); osc.stop(now + 0.05);
+        } else if (type === 'tower_fire') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(160, now + 0.1);
+          gain.gain.setValueAtTime(0.035, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+          osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'die') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(60, now + 0.14);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.14);
+          osc.start(now); osc.stop(now + 0.14);
+        } else if (type === 'victory') {
+          const chords = [
+            { f: 261.63, t: 0.00, d: 0.75, type: 'sawtooth', vol: 0.05 },
+            { f: 329.63, t: 0.08, d: 0.70, type: 'triangle', vol: 0.05 },
+            { f: 392.00, t: 0.16, d: 0.80, type: 'sawtooth', vol: 0.06 },
+            { f: 523.25, t: 0.28, d: 0.95, type: 'triangle', vol: 0.07 },
+            { f: 659.25, t: 0.40, d: 1.10, type: 'triangle', vol: 0.08 },
+            { f: 783.99, t: 0.52, d: 1.40, type: 'sawtooth', vol: 0.09 },
+            { f: 1046.5, t: 0.65, d: 1.60, type: 'sine',     vol: 0.08 }
+          ];
+          chords.forEach(c => {
+            const chordOsc = audioCtx.createOscillator();
+            const chordGain = audioCtx.createGain();
+            chordOsc.type = c.type;
+            chordOsc.frequency.setValueAtTime(c.f, now + c.t);
+            chordOsc.connect(chordGain);
+            chordGain.connect(audioCtx.destination);
+            chordGain.gain.setValueAtTime(0.001, now + c.t);
+            chordGain.gain.exponentialRampToValueAtTime(c.vol, now + c.t + 0.04);
+            chordGain.gain.exponentialRampToValueAtTime(0.0001, now + c.t + c.d);
+            chordOsc.start(now + c.t); chordOsc.stop(now + c.t + c.d);
+          });
+        }
+      } catch (e) {}
+    }
+
+    function resizeCanvases() {
+      const container = document.getElementById('petri-container');
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const availW = Math.max(200, rect.width - 8);
+      const availH = Math.max(200, rect.height - 8);
+
+      let w = availW;
+      let h = w * (9 / 16);
+      if (h > availH) {
+        h = availH;
+        w = h * (16 / 9);
+      }
+
+      canvasDisplayWidth = Math.floor(w);
+      canvasDisplayHeight = Math.floor(h);
+      canvasScale = canvasDisplayWidth / VIRTUAL_WIDTH;
+
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(canvasDisplayWidth * dpr);
+      canvas.height = Math.round(canvasDisplayHeight * dpr);
+      canvas.style.width = `${canvasDisplayWidth}px`;
+      canvas.style.height = `${canvasDisplayHeight}px`;
+
+      const chartRect = chartCanvas.getBoundingClientRect();
+      chartCanvas.width = Math.round(chartRect.width * dpr);
+      chartCanvas.height = Math.round(chartRect.height * dpr);
+    }
+
+    class Food {
+      constructor(x, y, amount = 1.0) {
+        this.x = x;
+        this.y = y;
+        this.amount = amount;
+        this.radius = 4 * Math.sqrt(this.amount);
+        this.pulse = Math.random() * Math.PI * 2;
+      }
+      update() { this.pulse += 0.05; }
+      draw(c) {
+        c.save();
+        const r = this.radius + Math.sin(this.pulse) * 0.8;
+        c.beginPath();
+        c.arc(this.x, this.y, r, 0, Math.PI * 2);
+        c.fillStyle = '#fbbf24';
+        c.shadowColor = '#f59e0b';
+        c.shadowBlur = 8;
+        c.fill();
+        c.restore();
+      }
+    }
+
+    const lanes = [
+      { id: 'top', points: [{ x: 190, y: 190 }, { x: 190, y: 110 }, { x: 960, y: 110 }, { x: 1730, y: 110 }, { x: 1730, y: 890 }], width: 65 },
+      { id: 'mid', points: [{ x: 190, y: 190 }, { x: 960, y: 540 }, { x: 1730, y: 890 }], width: 70 },
+      { id: 'bot', points: [{ x: 190, y: 190 }, { x: 190, y: 970 }, { x: 960, y: 970 }, { x: 1730, y: 970 }, { x: 1730, y: 890 }], width: 65 }
+    ];
+
+    function distToSegment(px, py, x1, y1, x2, y2) {
+      const l2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+      if (l2 === 0) return Math.hypot(px - x1, py - y1);
+      let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+      t = Math.max(0, Math.min(1, t));
+      return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
+    }
+
+    function getTerrainSpeedModifier(x, y) {
+      for (const lane of lanes) {
+        for (let i = 0; i < lane.points.length - 1; i++) {
+          const p1 = lane.points[i];
+          const p2 = lane.points[i + 1];
+          if (distToSegment(x, y, p1.x, p1.y, p2.x, p2.y) <= lane.width) return 1.4;
+        }
+      }
+      return 0.42;
+    }
+
+    const fixedFoodSpawners = [
+      { x: 740, y: 390, timer: 0, interval: 4.0, count: 6 },
+      { x: 1180, y: 690, timer: 2.0, interval: 4.0, count: 6 },
+      { x: 440, y: 780, timer: 1.0, interval: 4.5, count: 8 },
+      { x: 1480, y: 300, timer: 2.5, interval: 4.5, count: 8 },
+      { x: 1380, y: 790, timer: 1.5, interval: 4.5, count: 8 },
+      { x: 960, y: 540, timer: 0.5, interval: 5.0, count: 12 }
+    ];
+
+    const neutralCamps = [
+      { x: 520, y: 720, name: "Южный Лес Radiant" },
+      { x: 360, y: 520, name: "Малый Лес Radiant" },
+      { x: 580, y: 240, name: "Северный Лес Radiant" },
+      { x: 1400, y: 440, name: "Северный Лес Dire" },
+      { x: 1360, y: 830, name: "Южный Лес Dire" }
+    ];
+
+    class PlasmaBolt {
+      constructor(x, y, target, strain, damage = 1.15) {
+        this.x = x;
+        this.y = y;
+        this.target = target;
+        this.strain = strain;
+        this.speed = 13.5;
+        this.dead = false;
+        this.damage = damage;
+      }
+      update(dt) {
+        if (!this.target || this.target.dead) { this.dead = true; return; }
+        const dx = this.target.x - this.x;
+        const dy = this.target.y - this.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < 18) {
+          const effectiveDmg = this.damage * (this.target.getEffectiveDefenseMult ? this.target.getEffectiveDefenseMult() : 1.0);
+          this.target.energy -= effectiveDmg;
+          if (this.target.damageTaken !== undefined) this.target.damageTaken += effectiveDmg;
+          sparks.push(new CombatSpark(this.target.x, this.target.y, this.strain === 'alpha' ? '#34d399' : '#fb7185'));
+          playTone('clash');
+          if (this.target.energy <= 0) this.target.kill(`Уничтожен Супер-Бактерией`);
+          this.dead = true;
+          return;
+        }
+        this.x += (dx / dist) * this.speed * 60 * dt;
+        this.y += (dy / dist) * this.speed * 60 * dt;
+      }
+      draw(c) {
+        c.save();
+        c.beginPath();
+        c.arc(this.x, this.y, 6.5, 0, Math.PI * 2);
+        c.fillStyle = this.strain === 'alpha' ? '#34d399' : '#f43f5e';
+        c.shadowColor = this.strain === 'alpha' ? '#10b981' : '#e11d48';
+        c.shadowBlur = 12;
+        c.fill();
+        c.restore();
+      }
+    }
+
+    class SuperBacterium {
+      constructor(x, y, strain, tier = 'mid') {
+        this.x = x;
+        this.y = y;
+        this.strain = strain;
+        this.tier = tier;
+
+        let hpMultiplier = 1.0;
+        let dmgMultiplier = 1.0;
+        let baseRadius = 20;
+        let baseRange = 150;
+
+        if (tier === 'central') {
+          hpMultiplier = 0.5; dmgMultiplier = 0.5; baseRadius = 18; baseRange = 140;
+        } else if (tier === 'base') {
+          hpMultiplier = 1.5; dmgMultiplier = 1.5; baseRadius = 23; baseRange = 165;
+        }
+
+        this.maxHp = 9.0 * hpMultiplier;
+        this.hp = this.maxHp;
+        this.damage = 1.15 * dmgMultiplier;
+        this.range = baseRange;
+        this.radius = baseRadius;
+        this.attackCooldown = 0.40;
+        this.attackTimer = Math.random() * this.attackCooldown;
+        this.dead = false;
+        this.pulse = Math.random() * Math.PI;
+      }
+
+      update(dt, enemies) {
+        if (this.dead) return;
+        this.pulse += dt * 3;
+        this.attackTimer += dt;
+        if (this.attackTimer >= this.attackCooldown) {
+          let target = null;
+          let minDist = this.range;
+          for (let b of enemies) {
+            if (b.dead) continue;
+            const dist = Math.hypot(b.x - this.x, b.y - this.y);
+            if (dist < minDist) { minDist = dist; target = b; }
+          }
+          if (target) {
+            this.attackTimer = 0;
+            projectiles.push(new PlasmaBolt(this.x, this.y, target, this.strain, this.damage));
+            playTone('tower_fire');
+          }
+        }
+      }
+
+      draw(c) {
+        if (this.dead) return;
+        const isAlpha = this.strain === 'alpha';
+        const color = isAlpha ? '#10b981' : '#f43f5e';
+        const glow = isAlpha ? 'rgba(16, 185, 129, 0.45)' : 'rgba(244, 63, 94, 0.45)';
+
+        c.save();
+        c.beginPath();
+        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        c.fillStyle = '#090e17';
+        c.strokeStyle = color;
+        c.lineWidth = 3.5;
+        c.shadowColor = glow;
+        c.shadowBlur = 16;
+        c.fill();
+        c.stroke();
+
+        const coreScale = 1 + Math.sin(this.pulse) * 0.15;
+        c.beginPath();
+        c.arc(this.x, this.y, (this.radius * 0.4) * coreScale, 0, Math.PI * 2);
+        c.fillStyle = color;
+        c.fill();
+
+        const hpPct = Math.max(0, this.hp / this.maxHp);
+        const barW = this.radius * 2.2;
+        c.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        c.fillRect(this.x - barW / 2, this.y - this.radius - 10, barW, 4.5);
+        c.fillStyle = isAlpha ? '#34d399' : '#fb7185';
+        c.fillRect(this.x - barW / 2, this.y - this.radius - 10, barW * hpPct, 4.5);
+        c.restore();
+      }
+    }
+
+    class NeutralGuardian {
+      constructor(homeX, homeY, name) {
+        this.homeX = homeX;
+        this.homeY = homeY;
+        this.x = homeX;
+        this.y = homeY;
+        this.name = name;
+        this.strain = 'neutral';
+        this.maxEnergy = 1.6;
+        this.energy = this.maxEnergy;
+        this.damage = 0.32;
+        this.defenseMult = 0.75;
+        this.aggroRadius = 75;
+        this.leashRadius = 45;
+        this.length = 22;
+        this.width = 15;
+        this.angle = Math.random() * Math.PI * 2;
+        this.speed = 0.85;
+        this.dead = false;
+        this.respawnTimer = 0;
+        this.respawnDelay = 9.0;
+        this.kills = 0;
+      }
+
+      update(dt, allColony) {
+        if (this.dead) {
+          this.respawnTimer += dt;
+          if (this.respawnTimer >= this.respawnDelay) {
+            this.dead = false;
+            this.energy = this.maxEnergy;
+            this.x = this.homeX;
+            this.y = this.homeY;
+            this.respawnTimer = 0;
+            for (let k = 0; k < 10; k++) sparks.push(new CombatSpark(this.homeX, this.homeY, '#c084fc'));
+          }
+          return;
+        }
+
+        let nearestTarget = null;
+        let minDist = this.aggroRadius;
+        for (let b of allColony) {
+          if (b.dead || b.strain === 'neutral') continue;
+          const d = Math.hypot(b.x - this.x, b.y - this.y);
+          if (d < minDist) { minDist = d; nearestTarget = b; }
+        }
+
+        const distToHome = Math.hypot(this.x - this.homeX, this.y - this.homeY);
+
+        if (nearestTarget && distToHome < this.leashRadius) {
+          const targetAngle = Math.atan2(nearestTarget.y - this.y, nearestTarget.x - this.x);
+          this.angle += Math.sin(targetAngle - this.angle) * 0.35;
+          this.speed = 1.2 * CONFIG.mobility;
+
+          if (minDist < (this.length + nearestTarget.length) * 0.45) {
+            const dmg = this.damage * dt * 60;
+            nearestTarget.energy -= dmg * nearestTarget.getEffectiveDefenseMult();
+            nearestTarget.damageTaken += dmg;
+
+            const returnDmg = 0.65 * nearestTarget.getEffectiveDamageMult() * this.defenseMult * dt * 60;
+            this.energy -= returnDmg;
+
+            if (Math.random() < 0.3) {
+              sparks.push(new CombatSpark(this.x, this.y, '#e879f9'));
+              playTone('clash');
+            }
+
+            if (nearestTarget.energy <= 0 && !nearestTarget.dead) {
+              nearestTarget.kill(`Убит Лесным Стражем`);
+              this.kills++;
+              this.energy = Math.min(this.maxEnergy, this.energy + 0.4);
+            }
+
+            if (this.energy <= 0) {
+              this.kill(nearestTarget);
+              return;
+            }
+          }
+        } else {
+          if (distToHome > 8) {
+            const homeAngle = Math.atan2(this.homeY - this.y, this.homeX - this.x);
+            this.angle += Math.sin(homeAngle - this.angle) * 0.35;
+            this.speed = 0.9 * CONFIG.mobility;
+          } else {
+            this.speed = 0.15;
+            this.angle += (Math.random() - 0.5) * 0.2;
+          }
+          this.energy = Math.min(this.maxEnergy, this.energy + dt * 0.35);
+        }
+
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed;
+      }
+
+      kill(killer) {
+        this.dead = true;
+        this.respawnTimer = 0;
+        playTone('die');
+
+        if (killer && !killer.dead) {
+          killer.energy = Math.min(1.0, killer.energy + 0.28);
+          killer.kills++;
+          killer.mutations.damageBonus = (killer.mutations.damageBonus || 0) + 0.10;
+          killer.mutations.defenseBonus = Math.min(0.55, (killer.mutations.defenseBonus || 0) + 0.08);
+          killer.mutations.speedBonus = Math.min(0.45, (killer.mutations.speedBonus || 0) + 0.06);
+          killer.mutations.lifespanBonus = (killer.mutations.lifespanBonus || 0) + 0.10;
+
+          for (let k = 0; k < 8; k++) sparks.push(new CombatSpark(killer.x, killer.y, '#fbbf24'));
+          const sName = killer.strain === 'alpha' ? 'Radiant' : 'Dire';
+          showNotification(`🧬 Бактерия [${sName}] поглотила биомассу лагеря (+10% к урону)`);
+        }
+
+        for (let i = 0; i < 6; i++) {
+          foods.push(new Food(this.x + (Math.random() - 0.5) * 35, this.y + (Math.random() - 0.5) * 35, 1.0));
+        }
+      }
+
+      draw(c) {
+        if (this.dead) {
+          c.save();
+          const pct = Math.min(1, this.respawnTimer / this.respawnDelay);
+          c.beginPath();
+          c.arc(this.homeX, this.homeY, 15, -Math.PI / 2, -Math.PI / 2 + pct * Math.PI * 2);
+          c.strokeStyle = 'rgba(192, 132, 252, 0.7)';
+          c.lineWidth = 2.5;
+          c.stroke();
+          c.restore();
+          return;
+        }
+
+        c.save();
+        c.translate(this.x, this.y);
+        c.rotate(this.angle);
+
+        c.beginPath();
+        c.ellipse(0, 0, this.length * 0.62, this.width * 0.62, 0, 0, Math.PI * 2);
+        c.fillStyle = '#220b38';
+        c.strokeStyle = '#c084fc';
+        c.lineWidth = 2.2;
+        c.shadowColor = '#a855f7';
+        c.shadowBlur = 4;
+        c.fill();
+        c.stroke();
+
+        c.fillStyle = '#fbbf24';
+        c.beginPath();
+        c.arc(0, 0, 4.5, 0, Math.PI * 2);
+        c.fill();
+
+        const hpPct = Math.max(0, this.energy / this.maxEnergy);
+        c.rotate(-this.angle);
+        c.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        c.fillRect(-16, -this.width - 7, 32, 4);
+        c.fillStyle = '#d8b4fe';
+        c.fillRect(-16, -this.width - 7, 32 * hpPct, 4);
+        c.restore();
+      }
+    }
+
+    class CombatSpark {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        const angle = Math.random() * Math.PI * 2;
+        const spd = 2 + Math.random() * 4;
+        this.vx = Math.cos(angle) * spd;
+        this.vy = Math.sin(angle) * spd;
+        this.life = 1.0;
+        this.decay = 0.04 + Math.random() * 0.03;
+        this.color = color;
+        this.size = 2.5 + Math.random() * 2.5;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.life -= this.decay;
+      }
+      draw(c) {
+        if (this.life <= 0) return;
+        c.save();
+        c.globalAlpha = Math.max(0, this.life);
+        c.beginPath();
+        c.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        c.fillStyle = this.color;
+        c.shadowColor = this.color;
+        c.shadowBlur = 6;
+        c.fill();
+        c.restore();
+      }
+    }
+
+    class AutomaticFeeder {
+      constructor(x, y, strainType) {
+        this.x = x;
+        this.y = y;
+        this.strainType = strainType;
+        this.timer = Math.random() * CONFIG.feederInterval;
+        this.pulseRings = [];
+        this.radius = 48;
+        this.maxHp = 175.0;
+        this.hp = this.maxHp;
+        this.dead = false;
+      }
+
+      update(dt) {
+        if (this.dead) return;
+        this.timer += dt;
+        if (this.timer >= CONFIG.feederInterval) {
+          this.timer = 0;
+          this.dispenseBatch();
+        }
+
+        for (let i = this.pulseRings.length - 1; i >= 0; i--) {
+          const ring = this.pulseRings[i];
+          ring.r += 2.2;
+          ring.alpha -= 0.022;
+          if (ring.alpha <= 0) this.pulseRings.splice(i, 1);
+        }
+      }
+
+      dispenseBatch() {
+        if (this.dead) return;
+        this.pulseRings.push({ r: this.radius, alpha: 0.9 });
+        for (let i = 0; i < CONFIG.feederBatchSize; i++) {
+          if (foods.length >= 750) break;
+          const angle = Math.random() * Math.PI * 2;
+          const dist = this.radius + 12 + Math.random() * 70;
+          const fx = Math.min(VIRTUAL_WIDTH - 40, Math.max(40, this.x + Math.cos(angle) * dist));
+          const fy = Math.min(VIRTUAL_HEIGHT - 40, Math.max(40, this.y + Math.sin(angle) * dist));
+          foods.push(new Food(fx, fy));
+        }
+      }
+
+      draw(c) {
+        const isAlpha = this.strainType === 'alpha';
+        const mainColor = isAlpha ? '#10b981' : '#f43f5e';
+        const glowColor = isAlpha ? 'rgba(16, 185, 129, 0.45)' : 'rgba(244, 63, 94, 0.45)';
+
+        for (let ring of this.pulseRings) {
+          c.save();
+          c.beginPath();
+          c.arc(this.x, this.y, ring.r, 0, Math.PI * 2);
+          c.strokeStyle = mainColor;
+          c.globalAlpha = ring.alpha;
+          c.lineWidth = 2.5;
+          c.setLineDash([6, 6]);
+          c.stroke();
+          c.restore();
+        }
+
+        c.save();
+        c.beginPath();
+        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        c.fillStyle = 'rgba(10, 15, 23, 0.96)';
+        c.strokeStyle = mainColor;
+        c.lineWidth = 4;
+        c.shadowColor = glowColor;
+        c.shadowBlur = 24;
+        c.fill();
+        c.stroke();
+
+        const progress = (this.timer / CONFIG.feederInterval);
+        c.beginPath();
+        c.arc(this.x, this.y, this.radius - 6, -Math.PI / 2, (-Math.PI / 2) + progress * Math.PI * 2);
+        c.strokeStyle = mainColor;
+        c.lineWidth = 5;
+        c.stroke();
+
+        c.beginPath();
+        c.arc(this.x, this.y, 14, 0, Math.PI * 2);
+        c.fillStyle = isAlpha ? '#34d399' : '#fb7185';
+        c.fill();
+
+        const hpPct = Math.max(0, this.hp / this.maxHp);
+        const barW = 82;
+        const barH = 5;
+        c.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        c.fillRect(this.x - barW / 2, this.y + this.radius + 6, barW, barH);
+        c.fillStyle = isAlpha ? '#34d399' : '#fb7185';
+        c.fillRect(this.x - barW / 2, this.y + this.radius + 6, barW * hpPct, barH);
+        c.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        c.lineWidth = 1;
+        c.strokeRect(this.x - barW / 2, this.y + this.radius + 6, barW, barH);
+
+        const activeSpec = isAlpha ? SPECIES_CONFIG[currentAlphaSpecies] : SPECIES_CONFIG[currentBetaSpecies];
+        const labelY = this.y - this.radius - 22;
+        const textLabel = activeSpec.name;
+        
+        c.font = 'bold 18px "Inter", sans-serif';
+        const textWidth = c.measureText(textLabel).width;
+        
+        c.fillStyle = 'rgba(10, 15, 24, 0.95)';
+        c.strokeStyle = mainColor;
+        c.lineWidth = 1.8;
+        const padX = 14, padY = 7;
+        c.beginPath();
+        c.roundRect(this.x - textWidth / 2 - padX, labelY - 14 - padY, textWidth + padX * 2, 28 + padY, 8);
+        c.fill();
+        c.stroke();
+
+        c.fillStyle = isAlpha ? '#6ee7b7' : '#fda4af';
+        c.textAlign = 'center';
+        c.fillText(textLabel, this.x, labelY + 4);
+
+        if (!simStarted) {
+          c.font = '14px "JetBrains Mono", monospace';
+          c.fillStyle = '#67e8f9';
+          c.fillText('👆 [Клик: сменить вид]', this.x, this.y + this.radius + 26);
+        } else {
+          c.font = '14px "JetBrains Mono", monospace';
+          c.fillStyle = '#64748b';
+          c.fillText('🔒 [Зафиксировано]', this.x, this.y + this.radius + 26);
+        }
+        c.restore();
+      }
+    }
+
+    class AntibioticZone {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.radius = 12;
+        this.maxRadius = 45 + Math.random() * 15;
+        this.life = 1.0;
+        this.decayRate = 0.0022;
+      }
+      update(dt) {
+        if (this.radius < this.maxRadius) this.radius += 55 * dt;
+        this.life -= this.decayRate * 60 * dt;
+      }
+      draw(c) {
+        if (this.life <= 0) return;
+        c.save();
+        c.beginPath();
+        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        c.fillStyle = `rgba(168, 85, 247, ${this.life * 0.15})`;
+        c.fill();
+        c.strokeStyle = `rgba(192, 132, 252, ${this.life * 0.4})`;
+        c.lineWidth = 1.5;
+        c.setLineDash([4, 4]);
+        c.stroke();
+        c.restore();
+      }
+    }
+
+    class Bacterium {
+      constructor(x, y, parent = null, forcedStrain = null, forcedSpecies = null) {
+        this.x = x;
+        this.y = y;
+        this.id = Math.random().toString(36).substring(2, 9);
+        
+        if (forcedStrain) this.strain = forcedStrain;
+        else if (parent) this.strain = parent.strain;
+        else this.strain = Math.random() < 0.5 ? 'alpha' : 'beta';
+
+        if (forcedSpecies) this.speciesId = forcedSpecies;
+        else if (parent) this.speciesId = parent.speciesId;
+        else this.speciesId = (this.strain === 'alpha') ? currentAlphaSpecies : currentBetaSpecies;
+        
+        this.spec = SPECIES_CONFIG[this.speciesId] || SPECIES_CONFIG.warrior;
+
+        this.damageDealt = 0;
+        this.damageTaken = 0;
+        this.foodEaten = 0;
+        
+        const timeBonus = Math.min(1.2, (typeof simulationTime !== 'undefined' ? simulationTime : 0) * 0.0015);
+        this.timeEvoBonus = timeBonus;
+
+        this.mutations = parent ? { ...parent.mutations } : {
+          damageBonus: 0,
+          defenseBonus: 0,
+          speedBonus: 0,
+          lifespanBonus: 0
+        };
+
+        const baseLen = (20 + Math.random() * 6);
+        if (this.spec.shape === 'sphere') {
+          this.length = parent ? parent.length * (0.97 + Math.random() * 0.06) : (baseLen * 1.15);
+          this.width = this.length * 0.82;
+        } else if (this.spec.shape === 'slender') {
+          this.length = parent ? parent.length * (0.97 + Math.random() * 0.06) : (baseLen * 1.35);
+          this.width = this.length * 0.32;
+        } else {
+          this.length = parent ? parent.length * (0.96 + Math.random() * 0.08) : baseLen;
+          this.width = this.length * 0.46;
+        }
+
+        this.generation = parent ? parent.generation + 1 : 1;
+        if (this.generation > highestGeneration) highestGeneration = this.generation;
+
+        this.age = 0;
+        const effLifespanMult = this.spec.lifespanMult * (1 + this.mutations.lifespanBonus) * (1 + this.timeEvoBonus * 0.5);
+        this.lifespan = CONFIG.lifespanSeconds * effLifespanMult * (0.85 + Math.random() * 0.3);
+
+        this.energy = parent ? 0.48 : (0.55 + Math.random() * 0.25);
+        this.kills = parent ? Math.floor(parent.kills * 0.5) : 0;
+        
+        this.angle = Math.random() * Math.PI * 2;
+        this.speed = 1.0;
+        this.vx = 0;
+        this.vy = 0;
+
+        this.groupSize = 1;
+        this.currentBehavior = 'forage';
+
+        // Статус стража домашней кормушки
+        this.isFeederGuard = false;
+        this.guardPole = 0; // 0 — Полюс 1 (северо-запад/верх), 1 — Полюс 2 (юго-восток/низ)
+
+        this.tumbleTimer = Math.floor(15 + Math.random() * 40);
+        this.isTumbling = false;
+        this.inCombat = false;
+        this.flagellaPhase = Math.random() * Math.PI * 2;
+
+        this.isDividing = false;
+        this.divisionProgress = 0;
+
+        this.baseHue = (this.strain === 'alpha') ? 155 : 345;
+        if (parent) {
+          const mutate = Math.random() < CONFIG.mutationRate;
+          this.hue = mutate ? (parent.hue + (Math.random() - 0.5) * 18 + 360) % 360 : parent.hue;
+        } else {
+          this.hue = this.baseHue + (Math.random() - 0.5) * 15;
+        }
+
+        this.dead = false;
+        this.deathReason = "";
+        this.opacity = 1.0;
+      }
+
+      getEffectiveDamageMult() {
+        return this.spec.damageMult * (1 + this.mutations.damageBonus) * (1 + (this.timeEvoBonus || 0));
+      }
+
+      getEffectiveDefenseMult() {
+        const baseDef = this.spec.defenseMult * (1 - this.mutations.defenseBonus);
+        const timeDefBuff = 1 / (1 + (this.timeEvoBonus || 0) * 0.4);
+        return Math.max(0.08, baseDef * timeDefBuff);
+      }
+
+      update(dt, foods, antibiotics, allColony, activeSuperBacteria, neutrals) {
+        if (this.dead) {
+          this.opacity -= 1.8 * dt;
+          return;
+        }
+
+        this.age += dt;
+        const metabolicBurn = CONFIG.baseEnergyCostPerSecond * this.spec.energyBurnMult * dt;
+        this.energy -= metabolicBurn;
+
+        if (this.age >= this.lifespan) { this.kill("Старость"); return; }
+        if (this.energy <= 0) { this.kill("Истощение"); return; }
+
+        for (let ab of antibiotics) {
+          if (ab.life <= 0) continue;
+          if (Math.hypot(this.x - ab.x, this.y - ab.y) < ab.radius) {
+            this.kill("Осквернение"); playTone('die'); return;
+          }
+        }
+
+        // Атака вражеских супер-бактерий
+        for (let sb of activeSuperBacteria) {
+          if (sb.dead || sb.strain === this.strain) continue;
+          const distToSb = Math.hypot(sb.x - this.x, sb.y - this.y);
+          if (distToSb < sb.radius + this.length * 0.75) {
+            const dmg = 0.65 * CONFIG.combatDamageMultiplier * this.getEffectiveDamageMult() * dt;
+            sb.hp -= dmg;
+            this.damageDealt += dmg;
+            if (Math.random() < 0.25) sparks.push(new CombatSpark(this.x, this.y, '#f59e0b'));
+            if (sb.hp <= 0 && !sb.dead) {
+              sb.dead = true;
+              showNotification(`💥 Супер-бактерия фракции ${sb.strain === 'alpha' ? 'Radiant' : 'Dire'} РАЗРУШЕНА!`);
+              for (let k = 0; k < 20; k++) sparks.push(new CombatSpark(sb.x, sb.y, '#f59e0b'));
+            }
+          }
+        }
+
+        // Поглощение вражеской кормушки
+        const enemyFeeder = feeders.find(f => f.strainType !== this.strain && !f.dead);
+        if (enemyFeeder) {
+          const distToFeeder = Math.hypot(enemyFeeder.x - this.x, enemyFeeder.y - this.y);
+          if (distToFeeder < enemyFeeder.radius + this.length * 0.8) {
+            const biteDmg = 0.6 * CONFIG.combatDamageMultiplier * this.getEffectiveDamageMult() * dt;
+            enemyFeeder.hp -= biteDmg;
+            this.energy = Math.min(1.0, this.energy + biteDmg * 0.35);
+            this.damageDealt += biteDmg;
+            if (Math.random() < 0.25) {
+              sparks.push(new CombatSpark(this.x, this.y, '#f59e0b'));
+              playTone('eat');
+            }
+            if (enemyFeeder.hp <= 0 && !enemyFeeder.dead) {
+              enemyFeeder.dead = true;
+              enemyFeeder.hp = 0;
+              for (let k = 0; k < 35; k++) {
+                sparks.push(new CombatSpark(enemyFeeder.x, enemyFeeder.y, this.strain === 'alpha' ? '#34d399' : '#f43f5e'));
+              }
+              showNotification(`🏆 Кормушка ${enemyFeeder.strainType === 'alpha' ? 'Radiant' : 'Dire'} ПОЛНОСТЬЮ СЪЕДЕНА!`);
+              triggerMatchVictory(this.strain, 'feeder_eaten');
+              return;
+            }
+          }
+        }
+
+        // Стая, враги и башни
+        let allyCount = 0;
+        let groupCenterX = 0;
+        let groupCenterY = 0;
+        let groupPower = this.energy * this.getEffectiveDamageMult() * 2.2;
+        const allySearchRadius = 260;
+
+        for (let other of allColony) {
+          if (other === this || other.dead || other.strain !== this.strain) continue;
+          const d = Math.hypot(other.x - this.x, other.y - this.y);
+          if (d < allySearchRadius) {
+            allyCount++;
+            groupCenterX += other.x;
+            groupCenterY += other.y;
+            groupPower += other.energy * other.getEffectiveDamageMult() * 2.2;
+          }
+        }
+        this.groupSize = allyCount + 1;
+        this.groupPower = groupPower;
+        const isSolo = (this.groupSize < 2);
+
+        this.inCombat = false;
+        let nearestEnemy = null;
+        let minEnemyDist = 650;
+        let threatEnemy = null;
+        let minThreatDist = 240;
+
+        for (let other of allColony) {
+          if (other === this || other.dead || other.strain === this.strain) continue;
+          const d = Math.hypot(other.x - this.x, other.y - this.y);
+          if (d < minEnemyDist) { minEnemyDist = d; nearestEnemy = other; }
+          if (d < minThreatDist) { minThreatDist = d; threatEnemy = other; }
+
+          const contactDist = (this.length + other.length) * 0.45;
+          if (d < contactDist) {
+            this.inCombat = true;
+            other.inCombat = true;
+
+            const myDealtDamage = 0.65 * CONFIG.combatDamageMultiplier * this.getEffectiveDamageMult() * other.getEffectiveDefenseMult() * dt;
+            const enemyDealtDamage = 0.65 * CONFIG.combatDamageMultiplier * other.getEffectiveDamageMult() * this.getEffectiveDefenseMult() * dt;
+
+            other.energy -= myDealtDamage;
+            this.energy -= enemyDealtDamage;
+            this.damageDealt += myDealtDamage;
+            this.damageTaken += enemyDealtDamage;
+            other.damageDealt += enemyDealtDamage;
+            other.damageTaken += myDealtDamage;
+
+            if (Math.random() < 0.35) {
+              sparks.push(new CombatSpark((this.x + other.x) / 2, (this.y + other.y) / 2, this.strain === 'alpha' ? '#34d399' : '#fb7185'));
+              playTone('clash');
+            }
+
+            if (other.energy <= 0 && !other.dead) {
+              other.kill(`Убит штаммом ${this.strain === 'alpha' ? 'Radiant' : 'Dire'}`);
+              this.kills++;
+              this.energy = Math.min(1.0, this.energy + 0.45);
+              playTone('eat');
+            }
+            if (this.energy <= 0) {
+              this.kill(`Убит штаммом ${other.strain === 'alpha' ? 'Radiant' : 'Dire'}`);
+              other.kills++;
+              other.energy = Math.min(1.0, other.energy + 0.45);
+              playTone('die');
+              return;
+            }
+          }
+        }
+
+        let nearestEnemyTower = null;
+        let minTowerDist = 950;
+        let canAssaultTower = false;
+        for (let sb of activeSuperBacteria) {
+          if (sb.dead || sb.strain === this.strain) continue;
+          const d = Math.hypot(sb.x - this.x, sb.y - this.y);
+          if (d < minTowerDist) { minTowerDist = d; nearestEnemyTower = sb; }
+        }
+        if (nearestEnemyTower) {
+          canAssaultTower = (this.groupPower >= nearestEnemyTower.hp * 0.5);
+        }
+
+        let nearestNeutral = null;
+        let minNeutralDist = 650;
+        let canAssaultNeutral = false;
+        for (let n of neutrals) {
+          if (n.dead) continue;
+          const d = Math.hypot(n.x - this.x, n.y - this.y);
+          if (d < minNeutralDist) { minNeutralDist = d; nearestNeutral = n; }
+        }
+        if (nearestNeutral) {
+          canAssaultNeutral = (this.groupPower >= nearestNeutral.energy * 0.25) || (nearestNeutral.energy < 0.95);
+        }
+
+        let nearestFood = null;
+        let minFoodDist = 700;
+        for (let f of foods) {
+          const dist = Math.hypot(f.x - this.x, f.y - this.y);
+          if (dist < minFoodDist) { minFoodDist = dist; nearestFood = f; }
+        }
+
+        const threshold = Math.min(0.95, Math.max(0.45, CONFIG.reproductionEnergyThreshold + this.spec.reproThresholdBonus));
+        if (!this.isDividing && this.energy >= threshold && allColony.length < CONFIG.maxBacteria) {
+          this.isDividing = true;
+          this.divisionProgress = 0;
+        }
+
+        if (this.isDividing) {
+          this.divisionProgress += 1.5 * dt;
+          if (this.divisionProgress >= 1.0) {
+            this.split();
+            return;
+          }
+        }
+
+        let targetAngle = null;
+        let speedTacticalMult = 1.0;
+
+        const myFeeder = feeders.find(f => f.strainType === this.strain && !f.dead);
+
+        if (this.isFeederGuard && myFeeder) {
+          // =========================================================================
+          // ТАКТИКА СТРАЖЕЙ КОРМУШКИ (минимум 2 бактерии на противоположных полюсах)
+          // =========================================================================
+          // Полюса расположены строго на противоположных сторонах (180 градусов друг от друга)
+          const poleAngle = (this.guardPole === 0) ? (-Math.PI / 4) : (3 * Math.PI / 4);
+          const poleX = myFeeder.x + Math.cos(poleAngle) * 78;
+          const poleY = myFeeder.y + Math.sin(poleAngle) * 78;
+
+          // 1. Приоритет обороны: отражение интервентов в радиусе 180px от кормушки
+          let invaderNearFeeder = null;
+          let minInvaderDist = 180;
+          for (let other of allColony) {
+            if (other.dead || other.strain === this.strain) continue;
+            const dToFeeder = Math.hypot(other.x - myFeeder.x, other.y - myFeeder.y);
+            if (dToFeeder < minInvaderDist) {
+              minInvaderDist = dToFeeder;
+              invaderNearFeeder = other;
+            }
+          }
+
+          if (invaderNearFeeder) {
+            this.currentBehavior = 'guard_defense';
+            targetAngle = Math.atan2(invaderNearFeeder.y - this.y, invaderNearFeeder.x - this.x);
+            speedTacticalMult = 1.25;
+          } else {
+            // 2. Сбор новой порции корма в зоне кормушки (в радиусе 160px)
+            let feederFood = null;
+            let minFDist = 160;
+            for (let f of foods) {
+              const df = Math.hypot(f.x - myFeeder.x, f.y - myFeeder.y);
+              if (df < minFDist) {
+                const distToMe = Math.hypot(f.x - this.x, f.y - this.y);
+                if (distToMe < minFDist) {
+                  minFDist = distToMe;
+                  feederFood = f;
+                }
+              }
+            }
+
+            if (feederFood) {
+              this.currentBehavior = (this.guardPole === 0 ? 'guard_feed_pole0' : 'guard_feed_pole1');
+              targetAngle = Math.atan2(feederFood.y - this.y, feederFood.x - this.x);
+              speedTacticalMult = 1.15;
+            } else {
+              // 3. Патрулирование своего назначенного полюса
+              const distToPole = Math.hypot(this.x - poleX, this.y - poleY);
+              targetAngle = Math.atan2(poleY - this.y, poleX - this.x);
+              this.currentBehavior = (this.guardPole === 0 ? 'guard_patrol_pole0' : 'guard_patrol_pole1');
+              speedTacticalMult = distToPole > 24 ? 1.0 : 0.45;
+            }
+
+            // 4. Взаимное расталкивание стражей при опасном сближении (< 85px)
+            const otherGuard = allColony.find(b => b !== this && b.strain === this.strain && !b.dead && b.isFeederGuard);
+            if (otherGuard) {
+              const dGuards = Math.hypot(this.x - otherGuard.x, this.y - otherGuard.y);
+              if (dGuards < 85 && dGuards > 1) {
+                targetAngle = Math.atan2(this.y - otherGuard.y, this.x - otherGuard.x);
+                speedTacticalMult = 1.2;
+              }
+            }
+          }
+        } else if (isSolo) {
+          if (threatEnemy) {
+            this.currentBehavior = 'flee';
+            targetAngle = Math.atan2(this.y - threatEnemy.y, this.x - threatEnemy.x);
+            speedTacticalMult = 1.25;
+          } else if (nearestNeutral && minNeutralDist < 300 && (this.energy > 0.65 && (this.spec.id === 'warrior' || this.energy > nearestNeutral.energy * 0.6))) {
+            this.currentBehavior = 'attack_neutral';
+            targetAngle = Math.atan2(nearestNeutral.y - this.y, nearestNeutral.x - this.x);
+            speedTacticalMult = 1.25;
+          } else if (nearestNeutral && minNeutralDist < nearestNeutral.aggroRadius + 20) {
+            this.currentBehavior = 'flee_neutral';
+            targetAngle = Math.atan2(this.y - nearestNeutral.y, this.x - nearestNeutral.x);
+            speedTacticalMult = 1.15;
+          } else if (nearestFood) {
+            this.currentBehavior = 'forage';
+            targetAngle = Math.atan2(nearestFood.y - this.y, nearestFood.x - this.x);
+          } else if (allyCount > 0) {
+            this.currentBehavior = 'seek_allies';
+            targetAngle = Math.atan2((groupCenterY / allyCount) - this.y, (groupCenterX / allyCount) - this.x);
+          } else {
+            this.currentBehavior = 'roam_safe';
+          }
+        } else if (this.groupSize >= 15) {
+          speedTacticalMult = 1.35;
+          if (this.energy < 0.32 && nearestFood && minFoodDist < 160) {
+            this.currentBehavior = 'forage_group';
+            targetAngle = Math.atan2(nearestFood.y - this.y, nearestFood.x - this.x);
+          } else if (nearestEnemy && minEnemyDist < 260) {
+            this.currentBehavior = 'swarm_attack_enemy';
+            targetAngle = Math.atan2(nearestEnemy.y - this.y, nearestEnemy.x - this.x);
+          } else if (nearestEnemyTower && minTowerDist < 320) {
+            this.currentBehavior = 'swarm_assault_tower';
+            targetAngle = Math.atan2(nearestEnemyTower.y - this.y, nearestEnemyTower.x - this.x);
+          } else if (enemyFeeder && !enemyFeeder.dead) {
+            this.currentBehavior = 'swarm_invasion';
+            const isAlpha = (this.strain === 'alpha');
+            if (isAlpha) {
+              if (this.y < 320 && this.x < 1650) targetAngle = Math.atan2(110 - this.y, 1730 - this.x);
+              else if (this.y > 760 && this.x < 1650) targetAngle = Math.atan2(970 - this.y, 1730 - this.x);
+              else targetAngle = Math.atan2(enemyFeeder.y - this.y, enemyFeeder.x - this.x);
+            } else {
+              if (this.y < 320 && this.x > 260) targetAngle = Math.atan2(110 - this.y, 190 - this.x);
+              else if (this.y > 760 && this.x > 260) targetAngle = Math.atan2(970 - this.y, 190 - this.x);
+              else targetAngle = Math.atan2(enemyFeeder.y - this.y, enemyFeeder.x - this.x);
+            }
+          } else if (nearestEnemy) {
+            this.currentBehavior = 'swarm_attack_enemy';
+            targetAngle = Math.atan2(nearestEnemy.y - this.y, nearestEnemy.x - this.x);
+          } else {
+            const enemyBaseX = (this.strain === 'alpha') ? (VIRTUAL_WIDTH - 190) : 190;
+            const enemyBaseY = (this.strain === 'alpha') ? (VIRTUAL_HEIGHT - 190) : 190;
+            targetAngle = Math.atan2(enemyBaseY - this.y, enemyBaseX - this.x);
+          }
+        } else {
+          if (nearestNeutral && minNeutralDist < 480 && canAssaultNeutral) {
+            this.currentBehavior = 'attack_neutral';
+            targetAngle = Math.atan2(nearestNeutral.y - this.y, nearestNeutral.x - this.x);
+            speedTacticalMult = 1.25;
+          } else if (nearestFood && (minFoodDist < 420 || this.energy < 0.70)) {
+            this.currentBehavior = 'forage_group';
+            targetAngle = Math.atan2(nearestFood.y - this.y, nearestFood.x - this.x);
+          } else {
+            if (nearestEnemy && minEnemyDist < 580) {
+              this.currentBehavior = 'attack_enemy';
+              targetAngle = Math.atan2(nearestEnemy.y - this.y, nearestEnemy.x - this.x);
+              speedTacticalMult = 1.15;
+            } else if (nearestNeutral && minNeutralDist < 550 && canAssaultNeutral) {
+              this.currentBehavior = 'attack_neutral';
+              targetAngle = Math.atan2(nearestNeutral.y - this.y, nearestNeutral.x - this.x);
+              speedTacticalMult = 1.25;
+            } else if (nearestNeutral && minNeutralDist < 240 && !canAssaultNeutral) {
+              this.currentBehavior = 'flee_neutral';
+              targetAngle = Math.atan2(this.y - nearestNeutral.y, this.x - nearestNeutral.x);
+              speedTacticalMult = 1.15;
+            } else if (nearestEnemyTower && canAssaultTower) {
+              this.currentBehavior = 'attack_tower';
+              targetAngle = Math.atan2(nearestEnemyTower.y - this.y, nearestEnemyTower.x - this.x);
+              speedTacticalMult = 1.1;
+            } else if (nearestEnemyTower && !canAssaultTower && minTowerDist < nearestEnemyTower.range + 70) {
+              this.currentBehavior = 'flee_tower';
+              targetAngle = Math.atan2(this.y - nearestEnemyTower.y, this.x - nearestEnemyTower.x);
+              speedTacticalMult = 1.15;
+            } else if (nearestEnemy) {
+              this.currentBehavior = 'attack_enemy';
+              targetAngle = Math.atan2(nearestEnemy.y - this.y, nearestEnemy.x - this.x);
+            } else {
+              this.currentBehavior = 'push_base';
+              const targetDest = enemyFeeder ? enemyFeeder : ((this.strain === 'alpha') ? { x: VIRTUAL_WIDTH - 190, y: VIRTUAL_HEIGHT - 190 } : { x: 190, y: 190 });
+              targetAngle = Math.atan2(targetDest.y - this.y, targetDest.x - this.x);
+            }
+          }
+        }
+
+        if (targetAngle !== null) {
+          let diff = targetAngle - this.angle;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          const steerSpeed = (this.currentBehavior === 'flee' || this.currentBehavior === 'flee_neutral') 
+            ? 0.38 : (this.currentBehavior.startsWith('forage') ? 0.34 : 0.24);
+          this.angle += diff * steerSpeed;
+        } else {
+          this.tumbleTimer--;
+          if (this.tumbleTimer <= 0) {
+            this.angle += (Math.random() - 0.5) * 0.4;
+            this.tumbleTimer = Math.floor(25 + Math.random() * 30);
+          }
+        }
+
+        const terrainSpeed = getTerrainSpeedModifier(this.x, this.y);
+        const effSpeedMult = this.spec.speedBonus * (1 + this.mutations.speedBonus) * (1 + (this.timeEvoBonus || 0) * 0.3) * speedTacticalMult;
+        this.speed = (this.inCombat ? 1.35 : 1.1) * CONFIG.mobility * effSpeedMult * terrainSpeed;
+        this.vx = Math.cos(this.angle) * this.speed;
+        this.vy = Math.sin(this.angle) * this.speed;
+
+        this.x += this.vx * 60 * dt;
+        this.y += this.vy * 60 * dt;
+        this.flagellaPhase += 0.45 * (this.speed / CONFIG.mobility);
+
+        for (let i = foods.length - 1; i >= 0; i--) {
+          const f = foods[i];
+          if (Math.hypot(f.x - this.x, f.y - this.y) < this.length * 0.75 + f.radius) {
+            this.energy = Math.min(1.0, this.energy + CONFIG.foodNutritionalValue * f.amount);
+            this.foodEaten++;
+            foods.splice(i, 1);
+            playTone('eat');
+            break;
+          }
+        }
+
+        const pad = 24 + this.length;
+        if (this.x < pad) { this.x = pad; this.angle = Math.PI - this.angle + (Math.random() - 0.5) * 0.4; }
+        else if (this.x > VIRTUAL_WIDTH - pad) { this.x = VIRTUAL_WIDTH - pad; this.angle = Math.PI - this.angle + (Math.random() - 0.5) * 0.4; }
+        if (this.y < pad) { this.y = pad; this.angle = -this.angle + (Math.random() - 0.5) * 0.4; }
+        else if (this.y > VIRTUAL_HEIGHT - pad) { this.y = VIRTUAL_HEIGHT - pad; this.angle = -this.angle + (Math.random() - 0.5) * 0.4; }
+      }
+
+      kill(reason) {
+        this.dead = true;
+        this.deathReason = reason;
+
+        if (this.spec.id === 'toxic') {
+          for (let k = 0; k < 14; k++) sparks.push(new CombatSpark(this.x, this.y, '#a855f7'));
+          const burstDmg = this.spec.deathBurstDamage || 0.22;
+          for (let other of colony) {
+            if (other.dead || other.strain === this.strain) continue;
+            if (Math.hypot(other.x - this.x, other.y - this.y) < 65) {
+              other.energy -= burstDmg * other.getEffectiveDefenseMult();
+            }
+          }
+        }
+
+        if (Math.random() < 0.6 && foods.length < 450) {
+          foods.push(new Food(this.x, this.y, 0.7));
+        }
+      }
+
+      split() {
+        this.isDividing = false;
+        this.divisionProgress = 0;
+        this.energy = CONFIG.divisionEnergyLoss;
+
+        const offset = this.length * 0.5;
+        const daughterX = Math.min(VIRTUAL_WIDTH - 40, Math.max(40, this.x - Math.sin(this.angle) * offset));
+        const daughterY = Math.min(VIRTUAL_HEIGHT - 40, Math.max(40, this.y + Math.cos(this.angle) * offset));
+        this.x += Math.sin(this.angle) * offset;
+        this.y -= Math.cos(this.angle) * offset;
+
+        const daughter = new Bacterium(daughterX, daughterY, this, this.strain, this.speciesId);
+        daughter.angle = this.angle + Math.PI * 0.5 + (Math.random() - 0.5) * 0.4;
+        this.angle -= Math.PI * 0.5;
+        daughter.isFeederGuard = false;
+
+        if (this.damageTaken > 0.35) daughter.mutations.defenseBonus = Math.min(0.60, (this.mutations.defenseBonus || 0) + 0.08);
+        if (this.damageDealt > 0.40) daughter.mutations.damageBonus = Math.min(1.5, (this.mutations.damageBonus || 0) + 0.1);
+        if (this.foodEaten >= 3) daughter.mutations.speedBonus = Math.min(0.6, (this.mutations.speedBonus || 0) + 0.06);
+        if (this.age > this.lifespan * 0.5) daughter.mutations.lifespanBonus = Math.min(0.8, (this.mutations.lifespanBonus || 0) + 0.08);
+
+        colony.push(daughter);
+        playTone('divide');
+      }
+
+      draw(c) {
+        if (this.opacity <= 0) return;
+        c.save();
+        c.translate(this.x, this.y);
+        c.rotate(this.angle);
+        c.globalAlpha = Math.max(0, this.opacity);
+
+        let sat = 85;
+        let lum = 46 + this.energy * 16;
+        let hue = this.hue;
+
+        if (this.dead) { hue = 0; sat = 30; lum = 35; }
+        else if (this.age / this.lifespan > 0.8) lum -= 12;
+
+        const isSelected = (selectedBacterium === this);
+
+        if (isSelected) {
+          c.beginPath();
+          c.arc(0, 0, this.length * 1.4, 0, Math.PI * 2);
+          c.strokeStyle = '#38bdf8';
+          c.lineWidth = 2.5;
+          c.setLineDash([4, 4]);
+          c.stroke();
+          c.setLineDash([]);
+        }
+
+        // Выделение стражей кормушки тонким золотистым пунктиром
+        if (this.isFeederGuard && !this.dead) {
+          c.beginPath();
+          c.arc(0, 0, this.length * 1.05, 0, Math.PI * 2);
+          c.strokeStyle = '#fbbf24';
+          c.lineWidth = 1.6;
+          c.setLineDash([2, 4]);
+          c.stroke();
+          c.setLineDash([]);
+        }
+
+        if (this.groupSize >= 15 && !this.dead) {
+          c.beginPath();
+          c.arc(0, 0, this.length * 0.95, 0, Math.PI * 2);
+          c.strokeStyle = this.strain === 'alpha' ? 'rgba(52, 211, 153, 0.7)' : 'rgba(244, 63, 94, 0.7)';
+          c.lineWidth = 1.3;
+          c.setLineDash([3, 3]);
+          c.stroke();
+          c.setLineDash([]);
+        }
+
+        if (this.inCombat && !this.dead) {
+          c.beginPath();
+          c.arc(0, 0, this.length * 1.15, 0, Math.PI * 2);
+          c.strokeStyle = '#f59e0b';
+          c.lineWidth = 2;
+          c.stroke();
+        }
+
+        if (!this.dead) {
+          c.beginPath();
+          c.moveTo(-this.length * 0.55, 0);
+          const flagellaSteps = (this.spec.shape === 'slender') ? 4 : 3;
+          for (let step = 1; step <= flagellaSteps; step++) {
+            const wave = Math.sin(this.flagellaPhase + step * 1.5) * 4.5;
+            c.lineTo(-this.length * 0.55 - step * 6.5, wave);
+          }
+          c.strokeStyle = `hsla(${hue}, ${sat}%, ${lum}%, 0.45)`;
+          c.lineWidth = (this.spec.shape === 'slender') ? 2.5 : 1.6;
+          c.stroke();
+        }
+
+        const hl = (this.length / 2) * (1 + (this.isDividing ? 0.3 : 0));
+        const hw = this.width / 2;
+
+        if (this.spec.shape === 'sphere') {
+          c.beginPath();
+          c.ellipse(0, 0, hl * 0.85, hw, 0, 0, Math.PI * 2);
+        } else if (this.isDividing) {
+          const pinch = this.divisionProgress * (hw * 0.7);
+          c.beginPath();
+          c.moveTo(-hl, 0);
+          c.bezierCurveTo(-hl, -hw, -hl * 0.3, -hw, 0, -hw + pinch);
+          c.bezierCurveTo(hl * 0.3, -hw, hl, -hw, hl, 0);
+          c.bezierCurveTo(hl, hw, hl * 0.3, hw, 0, hw - pinch);
+          c.bezierCurveTo(-hl * 0.3, hw, -hl, hw, -hl, 0);
+          c.closePath();
+        } else {
+          c.beginPath();
+          c.ellipse(-hl * 0.4, 0, hl * 0.5, hw, 0, Math.PI * 0.5, Math.PI * 1.5);
+          c.lineTo(hl * 0.4, -hw);
+          c.ellipse(hl * 0.4, 0, hl * 0.5, hw, 0, -Math.PI * 0.5, Math.PI * 0.5);
+          c.lineTo(-hl * 0.4, hw);
+          c.closePath();
+        }
+
+        const grad = c.createRadialGradient(0, 0, 1, 0, 0, hl);
+        grad.addColorStop(0, `hsla(${hue}, ${sat}%, ${lum + 22}%, 0.98)`);
+        grad.addColorStop(0.7, `hsla(${hue}, ${sat}%, ${lum}%, 0.9)`);
+        grad.addColorStop(1, `hsla(${hue}, ${sat + 10}%, ${lum - 14}%, 0.95)`);
+
+        c.fillStyle = grad;
+        c.shadowColor = `hsla(${hue}, 85%, 50%, 0.6)`;
+        c.shadowBlur = isSelected ? 18 : 8;
+        c.fill();
+        c.shadowBlur = 0;
+
+        c.beginPath();
+        c.ellipse(0, 0, hl * 0.38, hw * 0.35, Math.sin(this.age * 2) * 0.2, 0, Math.PI * 2);
+        const hasMutations = (this.mutations.damageBonus > 0 || this.mutations.defenseBonus > 0 || this.mutations.speedBonus > 0);
+        c.fillStyle = hasMutations ? '#fde047' : `hsla(${hue + 25}, 90%, 85%, 0.5)`;
+        c.fill();
+
+        if (this.spec.id === 'toxic') {
+          c.beginPath();
+          c.arc(0, 0, 3.5, 0, Math.PI * 2);
+          c.fillStyle = '#c084fc';
+          c.fill();
+        }
+        c.restore();
+      }
+    }
+
+    let colony = [];
+    let neutrals = [];
+    let superBacteria = [];
+    let foods = [];
+    let antibiotics = [];
+    let sparks = [];
+    let feeders = [];
+    let projectiles = [];
+
+    // Контроль стражей кормушки: поддержание минимум 2 особей на противоположных сторонах
+    function updateFeederGuards() {
+      ['alpha', 'beta'].forEach(strain => {
+        const feeder = feeders.find(f => f.strainType === strain && !f.dead);
+        if (!feeder) return;
+
+        let guards = colony.filter(b => b.strain === strain && !b.dead && b.isFeederGuard);
+
+        // Если стражей больше 2, освобождаем дальних
+        if (guards.length > 2) {
+          guards.sort((a, b) => Math.hypot(a.x - feeder.x, a.y - feeder.y) - Math.hypot(b.x - feeder.x, b.y - feeder.y));
+          for (let i = 2; i < guards.length; i++) {
+            guards[i].isFeederGuard = false;
+          }
+          guards = guards.slice(0, 2);
+        }
+
+        // Если стражей меньше 2, назначаем ближайших живых бактерий этой фракции
+        if (guards.length < 2) {
+          const candidates = colony.filter(b => b.strain === strain && !b.dead && !b.isFeederGuard);
+          candidates.sort((a, b) => Math.hypot(a.x - feeder.x, a.y - feeder.y) - Math.hypot(b.x - feeder.x, b.y - feeder.y));
+          while (guards.length < 2 && candidates.length > 0) {
+            const recruit = candidates.shift();
+            recruit.isFeederGuard = true;
+            guards.push(recruit);
+          }
+        }
+
+        // Закрепление противоположных полюсов (0 и 1)
+        if (guards.length >= 1) guards[0].guardPole = 0;
+        if (guards.length >= 2) guards[1].guardPole = 1;
+      });
+    }
+
+    const chartHistory = { capacity: 60, alpha: [], beta: [], lastSampleTime: 0 };
+    let fullMatchHistory = { alpha: [], beta: [] };
+
+    function renderSlyWinnerBacterium(speciesId, winnerStrain, reason) {
+      const container = document.getElementById('sly-character-svg');
+      const quoteEl = document.getElementById('sly-character-quote');
+      const titleEl = document.getElementById('sly-character-title');
+      const auraEl = document.getElementById('sly-character-aura');
+      if (!container) return;
+
+      const isRadiant = (winnerStrain === 'alpha');
+      const mainColor = isRadiant ? '#34d399' : '#f43f5e';
+      const secColor = isRadiant ? '#10b981' : '#e11d48';
+      const glowColor = isRadiant ? 'rgba(52, 211, 153, 0.45)' : 'rgba(244, 63, 94, 0.45)';
+      
+      auraEl.style.backgroundColor = glowColor;
+
+      let svgHTML = '';
+      let quoteText = '';
+      let characterTitle = '';
+
+      if (speciesId === 'warrior') {
+        characterTitle = isRadiant ? '⚔️ Хитрый Военачальник Radiant' : '⚔️ Хитрый Военачальник Dire';
+        quoteText = reason === 'feeder_eaten' 
+          ? '«Ха! Мы не просто вас разбили — мы с аппетитом сожрали ваш трон!»' 
+          : '«Твой штамм даже не успел понять, отчего лопнули их мембраны!»';
+
+        svgHTML = `
+          <svg viewBox="0 0 160 120" class="w-full h-full filter drop-shadow-[0_0_15px_${mainColor}]">
+            <defs>
+              <linearGradient id="warriorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="${mainColor}" />
+                <stop offset="50%" stop-color="${secColor}" />
+                <stop offset="100%" stop-color="#0f172a" />
+              </linearGradient>
+            </defs>
+            <path d="M 28 60 Q 15 45 22 25" stroke="${mainColor}" stroke-width="3" fill="none" stroke-linecap="round" />
+            <path d="M 30 70 Q 10 75 16 95" stroke="${mainColor}" stroke-width="3" fill="none" stroke-linecap="round" />
+            <rect x="36" y="32" width="88" height="56" rx="28" fill="url(#warriorGrad)" stroke="#fbbf24" stroke-width="2.5" />
+            <path d="M 40 45 Q 80 40 120 45" stroke="#334155" stroke-width="6" fill="none" />
+            <polygon points="76,33 84,33 80,24" fill="#fbbf24" />
+            <path d="M 98 34 L 108 58" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M 56 54 Q 66 48 74 54" stroke="#ffffff" stroke-width="3.5" fill="none" stroke-linecap="round" />
+            <circle cx="103" cy="51" r="7.5" fill="#fef08a" stroke="#ca8a04" stroke-width="1.5" />
+            <ellipse cx="104" cy="51" rx="2.5" ry="5.5" fill="#0f172a" />
+            <circle cx="106" cy="48" r="1.5" fill="#ffffff" />
+            <path d="M 64 69 Q 82 82 102 68" stroke="#0f172a" stroke-width="3" fill="#881337" />
+            <polygon points="94,69 98,76 102,69" fill="#ffffff" />
+            <g transform="translate(118, 55)">
+              <path d="M 0 5 Q 12 12 24 2" stroke="${mainColor}" stroke-width="3.5" fill="none" />
+              <polygon points="20,-12 38,-3 20,4 23,-3" fill="#38bdf8" stroke="#ffffff" stroke-width="1.2" class="animate-pulse" />
+              <circle cx="38" cy="-3" r="3" fill="#fde047" class="animate-sly-glint" />
+            </g>
+          </svg>`;
+      } else if (speciesId === 'forager') {
+        characterTitle = isRadiant ? '🌾 Ловкий Вор Биомассы Radiant' : '🌾 Ловкий Вор Биомассы Dire';
+        quoteText = reason === 'feeder_eaten'
+          ? '«Я просто лакомился рунами, а потом случайно сгрыз весь ваш трон целиком!»'
+          : '«Пока вы гонялись за фрагами, я тихо сожрал все ресурсы на арене!»';
+
+        svgHTML = `
+          <svg viewBox="0 0 160 120" class="w-full h-full filter drop-shadow-[0_0_15px_${mainColor}]">
+            <defs>
+              <linearGradient id="foragerGrad" x1="0%" y1="0%" x2="100%" y2="50%">
+                <stop offset="0%" stop-color="#38bdf8" />
+                <stop offset="50%" stop-color="${mainColor}" />
+                <stop offset="100%" stop-color="#047857" />
+              </linearGradient>
+            </defs>
+            <path d="M 20 85 Q 40 40 70 70 T 120 50" stroke="url(#foragerGrad)" stroke-width="26" stroke-linecap="round" fill="none" />
+            <path d="M 120 50 Q 135 45 142 35" stroke="${mainColor}" stroke-width="14" stroke-linecap="round" fill="none" />
+            <path d="M 68 56 Q 96 46 122 52" stroke="#0f172a" stroke-width="14" stroke-linecap="round" fill="none" />
+            <path d="M 78 55 Q 86 49 92 56" stroke="#f8fafc" stroke-width="3" fill="none" stroke-linecap="round" />
+            <circle cx="110" cy="52" r="5" fill="#fde047" />
+            <circle cx="111" cy="51" r="2.5" fill="#0f172a" />
+            <circle cx="112" cy="49" r="1.2" fill="#ffffff" />
+            <path d="M 88 68 Q 98 75 108 67" stroke="#0f172a" stroke-width="2.5" fill="none" />
+            <path d="M 97 70 Q 101 80 106 72" fill="#f43f5e" stroke="#881337" stroke-width="1.2" />
+            <g transform="translate(42, 62)">
+              <circle cx="12" cy="12" r="14" fill="#fbbf24" stroke="#f59e0b" stroke-width="2" class="animate-sly-spores text-amber-400" />
+              <polygon points="12,4 18,12 12,20 6,12" fill="#fef08a" />
+              <circle cx="18" cy="6" r="2.5" fill="#ffffff" class="animate-sly-glint" />
+            </g>
+          </svg>`;
+      } else if (speciesId === 'tank') {
+        characterTitle = isRadiant ? '🛡️ Неуязвимый Авторитет Radiant' : '🛡️ Неуязвимый Авторитет Dire';
+        quoteText = reason === 'feeder_eaten'
+          ? '«Вы ковыряли мою броню, пока я методично продавливал вашу базу!»'
+          : '«Били-били — не пробили! Вы лишь слегка почесали мою мембрану, салаги.»';
+
+        svgHTML = `
+          <svg viewBox="0 0 160 120" class="w-full h-full filter drop-shadow-[0_0_15px_${mainColor}]">
+            <defs>
+              <radialGradient id="tankGrad" cx="40%" cy="40%" r="60%">
+                <stop offset="0%" stop-color="#94a3b8" />
+                <stop offset="50%" stop-color="${secColor}" />
+                <stop offset="100%" stop-color="#020617" />
+              </radialGradient>
+            </defs>
+            <circle cx="80" cy="60" r="42" fill="url(#tankGrad)" stroke="#e2e8f0" stroke-width="3" />
+            <circle cx="50" cy="35" r="2.5" fill="#cbd5e1" stroke="#334155" stroke-width="1" />
+            <circle cx="110" cy="35" r="2.5" fill="#cbd5e1" stroke="#334155" stroke-width="1" />
+            <circle cx="44" cy="72" r="2.5" fill="#cbd5e1" stroke="#334155" stroke-width="1" />
+            <circle cx="116" cy="72" r="2.5" fill="#cbd5e1" stroke="#334155" stroke-width="1" />
+            <g transform="translate(52, 44)">
+              <polygon points="0,4 24,0 26,14 2,16" fill="#0f172a" stroke="#e2e8f0" stroke-width="1.5" />
+              <polygon points="30,0 54,4 52,16 28,14" fill="#0f172a" stroke="#e2e8f0" stroke-width="1.5" />
+              <line x1="24" y1="5" x2="30" y2="5" stroke="#e2e8f0" stroke-width="2" />
+              <line x1="5" y1="6" x2="16" y2="12" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" />
+              <line x1="35" y1="6" x2="46" y2="12" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" />
+            </g>
+            <path d="M 62 76 Q 80 88 100 76" stroke="#0f172a" stroke-width="3.5" fill="#450a0a" />
+            <rect x="74" y="77" width="6" height="6" fill="#fbbf24" stroke="#ca8a04" stroke-width="1" />
+            <polygon points="77,75 79,73 81,75 79,77" fill="#ffffff" class="animate-sly-glint" />
+            <g transform="translate(98, 73) rotate(-15)">
+              <rect x="0" y="0" width="18" height="5" rx="1.5" fill="#78350f" stroke="#451a03" stroke-width="0.8" />
+              <rect x="15" y="0" width="3" height="5" fill="#ef4444" class="animate-pulse" />
+              <circle cx="24" cy="-4" r="3" fill="#94a3b8" class="animate-sly-smoke" />
+            </g>
+          </svg>`;
+      } else {
+        characterTitle = isRadiant ? '☣️ Коварный Токсичный Гений Radiant' : '☣️ Коварный Токсичный Гений Dire';
+        quoteText = reason === 'feeder_eaten'
+          ? '«Мои токсины разъели вашу цитадель до последнего пептида!»'
+          : '«Один микрограмм моего фермента — и ваша культура превратилась в суп!»';
+
+        svgHTML = `
+          <svg viewBox="0 0 160 120" class="w-full h-full filter drop-shadow-[0_0_8px_#c084fc]">
+            <defs>
+              <linearGradient id="toxicGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#a855f7" />
+                <stop offset="50%" stop-color="#6b21a8" />
+                <stop offset="100%" stop-color="#090514" />
+              </linearGradient>
+            </defs>
+            <circle cx="46" cy="36" r="6" fill="#22c55e" class="animate-sly-spores text-emerald-400" />
+            <circle cx="118" cy="38" r="7" fill="#c084fc" class="animate-sly-spores text-purple-400" />
+            <circle cx="34" cy="74" r="5" fill="#a855f7" />
+            <circle cx="126" cy="76" r="5" fill="#22c55e" />
+            <path d="M 44 48 C 65 30 105 32 120 56 C 110 88 65 92 44 74 C 36 66 36 56 44 48 Z" fill="url(#toxicGrad)" stroke="#4ade80" stroke-width="2.5" />
+            <path d="M 54 44 L 72 49" stroke="#4ade80" stroke-width="3" stroke-linecap="round" />
+            <path d="M 106 44 L 88 49" stroke="#4ade80" stroke-width="3" stroke-linecap="round" />
+            <ellipse cx="66" cy="54" rx="7.5" ry="6" fill="#4ade80" />
+            <ellipse cx="66" cy="54" rx="2" ry="5.5" fill="#052e16" />
+            <ellipse cx="94" cy="54" rx="7.5" ry="6" fill="#4ade80" />
+            <ellipse cx="94" cy="54" rx="2" ry="5.5" fill="#052e16" />
+            <path d="M 52 68 Q 80 92 110 68 Q 80 78 52 68 Z" fill="#22c55e" stroke="#14532d" stroke-width="1.5" />
+            <line x1="62" y1="71" x2="65" y2="76" stroke="#ffffff" stroke-width="2" />
+            <line x1="72" y1="73" x2="74" y2="79" stroke="#ffffff" stroke-width="2" />
+            <line x1="80" y1="74" x2="80" y2="80" stroke="#ffffff" stroke-width="2" />
+            <line x1="88" y1="73" x2="86" y2="79" stroke="#ffffff" stroke-width="2" />
+            <line x1="98" y1="71" x2="95" y2="76" stroke="#ffffff" stroke-width="2" />
+            <circle cx="112" cy="74" r="2.5" fill="#4ade80" class="animate-bounce" />
+          </svg>`;
+      }
+
+      container.innerHTML = svgHTML;
+      quoteEl.innerText = quoteText;
+      titleEl.innerText = characterTitle;
+    }
+
+    const victoryFxCanvas = document.getElementById('victoryFxCanvas');
+    const victoryFxCtx = victoryFxCanvas ? victoryFxCanvas.getContext('2d') : null;
+    let victoryParticles = [];
+    let victoryFxAnimationId = null;
+
+    class VictoryParticle {
+      constructor(w, h, isRadiant) {
+        this.w = w; this.h = h;
+        this.reset(true, isRadiant);
+      }
+      reset(init = false, isRadiant = true) {
+        this.x = this.w / 2 + (Math.random() - 0.5) * 60;
+        this.y = this.h / 2 + (Math.random() - 0.5) * 60;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2.5 + Math.random() * 8.5;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed - (Math.random() * 2);
+        this.size = 2.5 + Math.random() * 4.5;
+        this.life = 0.6 + Math.random() * 0.8;
+        this.maxLife = this.life;
+        this.gravity = 0.08;
+        const radiantPalette = ['#34d399', '#10b981', '#6ee7b7', '#fde047', '#fbbf24', '#ffffff'];
+        const direPalette = ['#f43f5e', '#fb7185', '#e11d48', '#fda4af', '#f59e0b', '#ffffff'];
+        const palette = isRadiant ? radiantPalette : direPalette;
+        this.color = palette[Math.floor(Math.random() * palette.length)];
+      }
+      update(dt) {
+        this.x += this.vx; this.y += this.vy;
+        this.vy += this.gravity; this.vx *= 0.985;
+        this.life -= dt;
+      }
+      draw(c) {
+        if (this.life <= 0) return;
+        c.save();
+        const progress = Math.max(0, this.life / this.maxLife);
+        c.globalAlpha = progress;
+        c.beginPath();
+        c.arc(this.x, this.y, this.size * progress, 0, Math.PI * 2);
+        c.fillStyle = this.color;
+        c.shadowColor = this.color;
+        c.shadowBlur = 10;
+        c.fill();
+        c.restore();
+      }
+    }
+
+    function initVictoryFx(isRadiant) {
+      if (!victoryFxCanvas || !victoryFxCtx) return;
+      const rect = victoryFxCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      victoryFxCanvas.width = Math.round(rect.width * dpr);
+      victoryFxCanvas.height = Math.round(rect.height * dpr);
+
+      victoryParticles = [];
+      for (let i = 0; i < 110; i++) victoryParticles.push(new VictoryParticle(rect.width, rect.height, isRadiant));
+
+      if (victoryFxAnimationId) cancelAnimationFrame(victoryFxAnimationId);
+
+      let lastFxTime = performance.now();
+      function loop(now) {
+        const dt = Math.min((now - lastFxTime) / 1000, 0.1);
+        lastFxTime = now;
+        victoryFxCtx.clearRect(0, 0, victoryFxCanvas.width, victoryFxCanvas.height);
+        victoryFxCtx.save();
+        victoryFxCtx.scale(dpr, dpr);
+
+        let activeCount = 0;
+        for (let p of victoryParticles) {
+          p.update(dt);
+          p.draw(victoryFxCtx);
+          if (p.life > 0) activeCount++;
+          else if (Math.random() < 0.25) { p.reset(false, isRadiant); activeCount++; }
+        }
+        victoryFxCtx.restore();
+        if (activeCount > 0 && !document.getElementById('victory-modal').classList.contains('hidden')) {
+          victoryFxAnimationId = requestAnimationFrame(loop);
+        }
+      }
+      victoryFxAnimationId = requestAnimationFrame(loop);
+    }
+
+    function stopVictoryFx() {
+      if (victoryFxAnimationId) { cancelAnimationFrame(victoryFxAnimationId); victoryFxAnimationId = null; }
+      if (victoryFxCtx && victoryFxCanvas) victoryFxCtx.clearRect(0, 0, victoryFxCanvas.width, victoryFxCanvas.height);
+    }
+
+    function initColony() {
+      stopVictoryFx();
+      colony = [];
+      neutrals = [];
+      superBacteria = [];
+      foods = [];
+      antibiotics = [];
+      sparks = [];
+      projectiles = [];
+      simulationTime = 0;
+      highestGeneration = 1;
+      selectedBacterium = null;
+      matchEnded = false;
+
+      chartHistory.alpha = [];
+      chartHistory.beta = [];
+      chartHistory.lastSampleTime = 0;
+      fullMatchHistory.alpha = [CONFIG.initialStrainCount];
+      fullMatchHistory.beta = [CONFIG.initialStrainCount];
+
+      feeders = [
+        new AutomaticFeeder(190, 190, 'alpha'),
+        new AutomaticFeeder(VIRTUAL_WIDTH - 190, VIRTUAL_HEIGHT - 190, 'beta')
+      ];
+
+      superBacteria = [
+        new SuperBacterium(280, 110, 'alpha', 'base'),
+        new SuperBacterium(670, 110, 'alpha', 'mid'),
+        new SuperBacterium(1060, 110, 'alpha', 'central'),
+        new SuperBacterium(300, 240, 'alpha', 'base'),
+        new SuperBacterium(580, 368, 'alpha', 'mid'),
+        new SuperBacterium(860, 495, 'alpha', 'central'),
+        new SuperBacterium(190, 310, 'alpha', 'base'),
+        new SuperBacterium(190, 855, 'alpha', 'mid'),
+        new SuperBacterium(620, 970, 'alpha', 'central'),
+
+        new SuperBacterium(1300, 110, 'beta', 'central'),
+        new SuperBacterium(1730, 225, 'beta', 'mid'),
+        new SuperBacterium(1730, 770, 'beta', 'base'),
+        new SuperBacterium(1060, 585, 'beta', 'central'),
+        new SuperBacterium(1340, 712, 'beta', 'mid'),
+        new SuperBacterium(1620, 840, 'beta', 'base'),
+        new SuperBacterium(860, 970, 'beta', 'central'),
+        new SuperBacterium(1250, 970, 'beta', 'mid'),
+        new SuperBacterium(1640, 970, 'beta', 'base')
+      ];
+
+      neutrals = neutralCamps.map(camp => new NeutralGuardian(camp.x, camp.y, camp.name));
+
+      for (let i = 0; i < CONFIG.initialStrainCount; i++) {
+        const x = 190 + (Math.random() - 0.5) * 140;
+        const y = 190 + (Math.random() - 0.5) * 140;
+        colony.push(new Bacterium(x, y, null, 'alpha', currentAlphaSpecies));
+      }
+
+      for (let i = 0; i < CONFIG.initialStrainCount; i++) {
+        const x = (VIRTUAL_WIDTH - 190) + (Math.random() - 0.5) * 140;
+        const y = (VIRTUAL_HEIGHT - 190) + (Math.random() - 0.5) * 140;
+        colony.push(new Bacterium(x, y, null, 'beta', currentBetaSpecies));
+      }
+
+      updateFeederGuards();
+      spawnInitialFixedRunes();
+      updateInspectorUI();
+      updateChart();
+    }
+
+    function spawnInitialFixedRunes() {
+      fixedFoodSpawners.forEach(spawner => {
+        for (let i = 0; i < spawner.count; i++) {
+          foods.push(new Food(spawner.x + (Math.random() - 0.5) * 45, spawner.y + (Math.random() - 0.5) * 45));
+        }
+      });
+    }
+
+    // Вывод победного экрана и заполнение блока коэффициентов
+    function triggerMatchVictory(winnerStrain, reason = 'wiped') {
+      if (matchEnded) return;
+      matchEnded = true;
+      isRunning = false;
+
+      const isRadiant = winnerStrain === 'alpha';
+      const victoryModal = document.getElementById('victory-modal');
+      const cardInner = document.getElementById('victory-card-inner');
+      const title = document.getElementById('victory-title');
+      const subtitle = document.getElementById('victory-subtitle');
+      const bannerTag = document.getElementById('victory-banner-tag');
+      const durationEl = document.getElementById('victory-match-duration');
+      const reasonBadge = document.getElementById('victory-reason-badge');
+      const maxGenEl = document.getElementById('victory-max-gen');
+      const petriContainer = document.getElementById('petri-container');
+
+      if (petriContainer) {
+        petriContainer.classList.remove('screen-shake-effect');
+        void petriContainer.offsetWidth;
+        petriContainer.classList.add('screen-shake-effect');
+        setTimeout(() => petriContainer.classList.remove('screen-shake-effect'), 700);
+      }
+
+      const mins = Math.floor(simulationTime / 60).toString().padStart(2, '0');
+      const secs = Math.floor(simulationTime % 60).toString().padStart(2, '0');
+      if (durationEl) durationEl.innerText = `${mins}:${secs}`;
+      if (maxGenEl) maxGenEl.innerText = `Gen ${highestGeneration}`;
+
+      if (isRadiant) {
+        if (bannerTag) {
+          bannerTag.className = "text-[9px] font-mono tracking-[0.25em] uppercase font-bold px-3 py-0.5 rounded-full border border-emerald-500/50 text-emerald-300 bg-emerald-950/70 shadow-md mb-1.5";
+          bannerTag.innerText = "ВЕЛИКИЙ ТРИУМФ RADIANT";
+        }
+        if (title) {
+          title.innerText = "ПОБЕДА RADIANT!";
+          title.className = "text-xl sm:text-2xl font-extrabold font-dota mb-0.5 tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-yellow-200 to-emerald-400 shimmer-text dota-gold-glow";
+        }
+        if (reason === 'feeder_eaten') {
+          if (reasonBadge) { reasonBadge.innerText = "Трон Съеден"; reasonBadge.className = "font-bold text-amber-300 text-[10px]"; }
+          if (subtitle) subtitle.innerText = "Вражеская кормушка Dire полностью поглощена и съедена штаммом Radiant!";
+        } else {
+          if (reasonBadge) { reasonBadge.innerText = "Истребление"; reasonBadge.className = "font-bold text-emerald-300 text-[10px]"; }
+          if (subtitle) subtitle.innerText = "Колония Dire полностью истреблена в ходе тотальной биологической войны.";
+        }
+      } else {
+        if (bannerTag) {
+          bannerTag.className = "text-[9px] font-mono tracking-[0.25em] uppercase font-bold px-3 py-0.5 rounded-full border border-rose-500/50 text-rose-300 bg-rose-950/70 shadow-md mb-1.5";
+          bannerTag.innerText = "ВЕЛИКИЙ ТРИУМФ DIRE";
+        }
+        if (title) {
+          title.innerText = "ПОБЕДА DIRE!";
+          title.className = "text-xl sm:text-2xl font-extrabold font-dota mb-0.5 tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-orange-300 to-rose-500 shimmer-text";
+        }
+        if (reason === 'feeder_eaten') {
+          if (reasonBadge) { reasonBadge.innerText = "Древо Съедено"; reasonBadge.className = "font-bold text-amber-300 text-[10px]"; }
+          if (subtitle) subtitle.innerText = "Кормушка Radiant полностью поглощена и съедена штаммом Dire!";
+        } else {
+          if (reasonBadge) { reasonBadge.innerText = "Истребление"; reasonBadge.className = "font-bold text-rose-400 text-[10px]"; }
+          if (subtitle) subtitle.innerText = "Колония Radiant полностью уничтожена под натиском багрового штамма.";
+        }
+      }
+
+      // Вывод коэффициентов после симуляции
+      const specRad = SPECIES_CONFIG[currentAlphaSpecies];
+      const specDire = SPECIES_CONFIG[currentBetaSpecies];
+      const timeBonus = (Math.min(1.2, simulationTime * 0.0015) * 100).toFixed(1);
+      const coeffGrid = document.getElementById('victory-coefficients-grid');
+      if (coeffGrid) {
+        const radK = (specRad.damageMult / specRad.defenseMult).toFixed(2);
+        const direK = (specDire.damageMult / specDire.defenseMult).toFixed(2);
+        coeffGrid.innerHTML = `
+          <div class="p-2 rounded-lg bg-emerald-950/50 border border-emerald-500/30">
+            <div class="font-dota font-bold text-emerald-300 text-[10px] mb-1 flex justify-between items-center">
+              <span>🟢 Radiant: ${specRad.badge}</span>
+              <span class="font-mono text-emerald-400 text-[9px]">k = ${radK}</span>
+            </div>
+            <div class="space-y-0.5 text-[9px] text-slate-300 font-mono">
+              <div>Урон: <span class="text-emerald-300 font-bold">${specRad.damageMult.toFixed(2)}x</span></div>
+              <div>Броня: <span class="text-cyan-300">${Math.round((1 - specRad.defenseMult) * 100)}%</span> (x${specRad.defenseMult.toFixed(2)})</div>
+              <div>Скорость: <span class="text-amber-300">${specRad.speedBonus.toFixed(2)}x</span></div>
+              <div>Срок жизни: <span class="text-emerald-300">${Math.round(specRad.lifespanMult * 100)}%</span></div>
+            </div>
+          </div>
+          <div class="p-2 rounded-lg bg-rose-950/50 border border-rose-500/30">
+            <div class="font-dota font-bold text-rose-300 text-[10px] mb-1 flex justify-between items-center">
+              <span>🔴 Dire: ${specDire.badge}</span>
+              <span class="font-mono text-rose-400 text-[9px]">k = ${direK}</span>
+            </div>
+            <div class="space-y-0.5 text-[9px] text-slate-300 font-mono">
+              <div>Урон: <span class="text-rose-300 font-bold">${specDire.damageMult.toFixed(2)}x</span></div>
+              <div>Броня: <span class="text-cyan-300">${Math.round((1 - specDire.defenseMult) * 100)}%</span> (x${specDire.defenseMult.toFixed(2)})</div>
+              <div>Скорость: <span class="text-amber-300">${specDire.speedBonus.toFixed(2)}x</span></div>
+              <div>Срок жизни: <span class="text-rose-300">${Math.round(specDire.lifespanMult * 100)}%</span></div>
+            </div>
+          </div>
+          <div class="col-span-2 pt-1 border-t border-slate-800 flex justify-between text-[9px] font-mono text-slate-400">
+            <span>Эволюционный прирост: +${timeBonus}%</span>
+            <span class="text-amber-300">Баланс: 100 vs 100 (выживших ≤ 5)</span>
+          </div>
+        `;
+      }
+
+      playTone('victory');
+
+      if (cardInner) {
+        cardInner.classList.remove('animate-victory-card');
+        void cardInner.offsetWidth;
+        cardInner.classList.add('animate-victory-card');
+      }
+
+      if (victoryModal) victoryModal.classList.remove('hidden');
+      initVictoryFx(isRadiant);
+
+      const winningSpeciesId = isRadiant ? currentAlphaSpecies : currentBetaSpecies;
+      renderSlyWinnerBacterium(winningSpeciesId, winnerStrain, reason);
+
+      setSpeciesConfigLocked(false);
+      syncOpponentSelectorLabels();
+
+      requestAnimationFrame(() => setTimeout(drawVictoryChart, 60));
+    }
+
+    function syncOpponentSelectorLabels() {
+      const alphaSpec = SPECIES_CONFIG[currentAlphaSpecies];
+      const betaSpec = SPECIES_CONFIG[currentBetaSpecies];
+
+      const startAlpha = document.getElementById('start-alpha-name');
+      const startBeta = document.getElementById('start-beta-name');
+      const victAlpha = document.getElementById('victory-alpha-name');
+      const victBeta = document.getElementById('victory-beta-name');
+
+      if (startAlpha && alphaSpec) startAlpha.innerText = alphaSpec.badge;
+      if (startBeta && betaSpec) startBeta.innerText = betaSpec.badge;
+      if (victAlpha && alphaSpec) victAlpha.innerText = alphaSpec.badge;
+      if (victBeta && betaSpec) victBeta.innerText = betaSpec.badge;
+    }
+
+    function drawVictoryChart() {
+      if (!victoryChartCanvas || !victoryChartCtx) return;
+      const rect = victoryChartCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = rect.width > 0 ? rect.width : 400;
+      const h = rect.height > 0 ? rect.height : 110;
+
+      victoryChartCanvas.width = Math.round(w * dpr);
+      victoryChartCanvas.height = Math.round(h * dpr);
+
+      victoryChartCtx.setTransform(1, 0, 0, 1, 0, 0);
+      victoryChartCtx.scale(dpr, dpr);
+      victoryChartCtx.clearRect(0, 0, w, h);
+
+      victoryChartCtx.strokeStyle = 'rgba(51, 65, 85, 0.25)';
+      victoryChartCtx.lineWidth = 1;
+      victoryChartCtx.beginPath();
+      for (let y = 0; y < h; y += h / 3) {
+        victoryChartCtx.moveTo(0, y);
+        victoryChartCtx.lineTo(w, y);
+      }
+      victoryChartCtx.stroke();
+
+      const alphaData = fullMatchHistory.alpha.length < 2 ? [fullMatchHistory.alpha[0] || 16, fullMatchHistory.alpha[0] || 16] : fullMatchHistory.alpha;
+      const betaData = fullMatchHistory.beta.length < 2 ? [fullMatchHistory.beta[0] || 16, fullMatchHistory.beta[0] || 16] : fullMatchHistory.beta;
+      const len = alphaData.length;
+      const maxVal = Math.max(30, ...alphaData, ...betaData);
+
+      victoryChartCtx.beginPath();
+      alphaData.forEach((val, idx) => {
+        const x = (idx / (len - 1)) * w;
+        const y = h - (val / maxVal) * (h - 16) - 8;
+        if (idx === 0) victoryChartCtx.moveTo(x, y);
+        else victoryChartCtx.lineTo(x, y);
+      });
+      victoryChartCtx.strokeStyle = '#10b981';
+      victoryChartCtx.lineWidth = 3;
+      victoryChartCtx.stroke();
+
+      victoryChartCtx.beginPath();
+      betaData.forEach((val, idx) => {
+        const x = (idx / (len - 1)) * w;
+        const y = h - (val / maxVal) * (h - 16) - 8;
+        if (idx === 0) victoryChartCtx.moveTo(x, y);
+        else victoryChartCtx.lineTo(x, y);
+      });
+      victoryChartCtx.strokeStyle = '#f43f5e';
+      victoryChartCtx.lineWidth = 3;
+      victoryChartCtx.stroke();
+    }
+
+    document.getElementById('btn-close-victory').addEventListener('click', () => {
+      stopVictoryFx();
+      document.getElementById('victory-modal').classList.add('hidden');
+      setSpeciesConfigLocked(false);
+      showNotification("Вы можете изучить поле, кликнуть по кормушке для смены штамма или нажать «Сброс».");
+    });
+
+    document.getElementById('btn-new-simulation').addEventListener('click', () => {
+      stopVictoryFx();
+      document.getElementById('victory-modal').classList.add('hidden');
+      simStarted = false;
+      matchEnded = false;
+      setSpeciesConfigLocked(false);
+      initColony();
+      syncOpponentSelectorLabels();
+      btnStart.click();
+    });
+
+    document.getElementById('victory-pick-alpha').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openFeederModal({ strainType: 'alpha' });
+    });
+    document.getElementById('victory-pick-beta').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openFeederModal({ strainType: 'beta' });
+    });
+
+    document.getElementById('start-pick-alpha').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openFeederModal({ strainType: 'alpha' });
+    });
+    document.getElementById('start-pick-beta').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openFeederModal({ strainType: 'beta' });
+    });
+
+    function setSpeciesConfigLocked(locked) {
+      const lockBadge = document.getElementById('tuning-lock-badge');
+      const lockedNotice = document.getElementById('tuning-locked-notice');
+      const controlsBox = document.getElementById('tuning-controls-box');
+      const btnResetStats = document.getElementById('btn-reset-species-stats');
+      
+      const sliders = [
+        document.getElementById('tune-slider-speed'),
+        document.getElementById('tune-slider-damage'),
+        document.getElementById('tune-slider-defense'),
+        document.getElementById('tune-slider-lifespan')
+      ];
+
+      if (locked) {
+        lockBadge.classList.remove('hidden');
+        lockedNotice.classList.remove('hidden');
+        controlsBox.classList.add('opacity-60', 'pointer-events-none');
+        btnResetStats.classList.add('opacity-40', 'pointer-events-none');
+        sliders.forEach(s => { if (s) s.disabled = true; });
+      } else {
+        lockBadge.classList.add('hidden');
+        lockedNotice.classList.add('hidden');
+        controlsBox.classList.remove('opacity-60', 'pointer-events-none');
+        btnResetStats.classList.remove('opacity-40', 'pointer-events-none');
+        sliders.forEach(s => { if (s) s.disabled = false; });
+      }
+    }
+
+    function checkFeederClick(x, y) {
+      for (let feeder of feeders) {
+        const dist = Math.hypot(feeder.x - x, feeder.y - y);
+        if (dist <= feeder.radius + 30) {
+          if (simStarted && !matchEnded) {
+            showNotification("🔒 Выбор вида заблокирован во время активного матча! Нажмите «Сброс».");
+            return true;
+          }
+          openFeederModal(feeder);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function openFeederModal(feeder) {
+      if (simStarted && !matchEnded) {
+        showNotification("🔒 Выбор вида заблокирован во время матча. Нажмите «Сброс»!");
+        return;
+      }
+      const modal = document.getElementById('feeder-modal');
+      const title = document.getElementById('modal-feeder-title');
+      const dot = document.getElementById('modal-feeder-dot');
+      const isAlpha = feeder.strainType === 'alpha';
+
+      title.innerText = `Выбор штамма: ${isAlpha ? 'Radiant (Зеленый)' : 'Dire (Красный)'}`;
+      dot.className = `w-2.5 h-2.5 rounded-full ${isAlpha ? 'bg-emerald-400' : 'bg-rose-400'}`;
+
+      renderSpeciesList(feeder.strainType);
+      modal.classList.remove('hidden');
+    }
+
+    function renderSpeciesList(strainType) {
+      const list = document.getElementById('modal-species-list');
+      const currentSelected = (strainType === 'alpha') ? currentAlphaSpecies : currentBetaSpecies;
+      list.innerHTML = '';
+
+      Object.values(SPECIES_CONFIG).forEach(spec => {
+        const isSelected = (spec.id === currentSelected);
+        const btn = document.createElement('div');
+        btn.className = `p-2 rounded-xl border cursor-pointer transition flex flex-col justify-between ${
+          isSelected 
+            ? (strainType === 'alpha' ? 'bg-emerald-950/60 border-emerald-400 text-white shadow-md shadow-emerald-500/20' : 'bg-rose-950/60 border-rose-400 text-white shadow-md shadow-rose-500/20')
+            : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300'
+        }`;
+        
+        btn.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-0.5">
+              <span class="font-bold text-xs font-dota">${spec.name}</span>
+              ${isSelected ? '<span class="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono">Выбран</span>' : ''}
+            </div>
+            <div class="text-[9px] text-slate-400 space-y-0.5 font-mono">
+              <div>Скорость: <span class="text-slate-200">${spec.speedBonus}x</span> | Урон: <span class="text-slate-200">${spec.damageMult}x</span></div>
+              <div>Броня: <span class="text-slate-200">${Math.round((1 - spec.defenseMult) * 100)}%</span> | Срок: <span class="text-slate-200">${spec.lifespanMult}x</span></div>
+            </div>
+          </div>
+        `;
+
+        btn.addEventListener('click', () => {
+          if (simStarted && !matchEnded) return;
+          if (strainType === 'alpha') currentAlphaSpecies = spec.id;
+          else currentBetaSpecies = spec.id;
+          
+          syncOpponentSelectorLabels();
+
+          const victoryModal = document.getElementById('victory-modal');
+          if (victoryModal && !victoryModal.classList.contains('hidden')) {
+            const isRadiant = document.getElementById('victory-title').innerText.includes('RADIANT');
+            const winningStrain = isRadiant ? 'alpha' : 'beta';
+            const winningSpeciesId = isRadiant ? currentAlphaSpecies : currentBetaSpecies;
+            renderSlyWinnerBacterium(winningSpeciesId, winningStrain);
+          }
+
+          document.getElementById('feeder-modal').classList.add('hidden');
+          showNotification(`Для фракции ${strainType === 'alpha' ? 'Radiant' : 'Dire'} установлен вид: ${spec.name}`);
+        });
+
+        list.appendChild(btn);
+      });
+    }
+
+    document.getElementById('feeder-modal-close').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('feeder-modal').classList.add('hidden');
+    });
+    document.getElementById('btn-modal-cancel').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('feeder-modal').classList.add('hidden');
+    });
+
+    function handleCanvasClick(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.clientX !== undefined ? e.clientX : (e.changedTouches && e.changedTouches[0].clientX);
+      const clientY = e.clientY !== undefined ? e.clientY : (e.changedTouches && e.changedTouches[0].clientY);
+      if (clientX === undefined || clientY === undefined) return;
+
+      const x = (clientX - rect.left) * (VIRTUAL_WIDTH / rect.width);
+      const y = (clientY - rect.top) * (VIRTUAL_HEIGHT / rect.height);
+
+      if (x < 10 || x > VIRTUAL_WIDTH - 10 || y < 10 || y > VIRTUAL_HEIGHT - 10) return;
+
+      if ((!simStarted || matchEnded) && checkFeederClick(x, y)) return;
+
+      if (cheatsEnabled && currentTool !== 'inspect') {
+        handlePointerAction(e);
+        return;
+      }
+
+      let nearest = null;
+      let minDist = 36;
+      for (let b of colony) {
+        if (b.dead) continue;
+        const d = Math.hypot(b.x - x, b.y - y);
+        if (d < minDist) { minDist = d; nearest = b; }
+      }
+
+      if (nearest) {
+        selectedBacterium = nearest;
+        updateInspectorUI();
+        showNotification(`Выбрана особь штамма ${nearest.strain === 'alpha' ? 'Radiant' : 'Dire'}`);
+        return;
+      }
+
+      if (simStarted && !matchEnded) {
+        setSimulationRunning(!isRunning);
+        showNotification(isRunning ? "▶️ Симуляция продолжается" : "⏸️ Симуляция на паузе");
+      }
+    }
+
+    function handlePointerAction(e) {
+      if (!cheatsEnabled && currentTool !== 'inspect') return;
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0].clientY);
+      if (clientX === undefined || clientY === undefined) return;
+
+      const x = (clientX - rect.left) * (VIRTUAL_WIDTH / rect.width);
+      const y = (clientY - rect.top) * (VIRTUAL_HEIGHT / rect.height);
+
+      if (x < 10 || x > VIRTUAL_WIDTH - 10 || y < 10 || y > VIRTUAL_HEIGHT - 10) return;
+
+      if (currentTool === 'food') {
+        for (let i = 0; i < 4; i++) foods.push(new Food(x + (Math.random() - 0.5) * 35, y + (Math.random() - 0.5) * 35));
+      } else if (currentTool === 'alpha') {
+        if (colony.length < CONFIG.maxBacteria) colony.push(new Bacterium(x, y, null, 'alpha', currentAlphaSpecies));
+      } else if (currentTool === 'beta') {
+        if (colony.length < CONFIG.maxBacteria) colony.push(new Bacterium(x, y, null, 'beta', currentBetaSpecies));
+      } else if (currentTool === 'antibiotic') {
+        antibiotics.push(new AntibioticZone(x, y));
+        playTone('clash');
+        showNotification("Внесена зона осквернения");
+      }
+    }
+
+    function showNotification(text) {
+      const el = document.getElementById('lab-notification');
+      document.getElementById('lab-notification-text').innerText = text;
+      el.classList.remove('opacity-0');
+      clearTimeout(window._notifTimer);
+      window._notifTimer = setTimeout(() => el.classList.add('opacity-0'), 2000);
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      isMouseDown = true;
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+      initAudio();
+      if (cheatsEnabled && (currentTool === 'food' || currentTool === 'antibiotic')) handlePointerAction(e);
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (isMouseDown) {
+        if (Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y) < 8) handleCanvasClick(e);
+      }
+      isMouseDown = false;
+    });
+    
+    canvas.addEventListener('mousemove', (e) => {
+      if (isMouseDown && cheatsEnabled && (currentTool === 'food' || currentTool === 'antibiotic')) handlePointerAction(e);
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault(); initAudio(); isMouseDown = true;
+      const t = e.touches[0];
+      pointerDownPos = { x: t.clientX, y: t.clientY };
+      if (cheatsEnabled && (currentTool === 'food' || currentTool === 'antibiotic')) handlePointerAction(e);
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (isMouseDown && cheatsEnabled && (currentTool === 'food' || currentTool === 'antibiotic')) handlePointerAction(e);
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      if (isMouseDown) handleCanvasClick(e);
+      isMouseDown = false;
+    }, { passive: false });
+
+    const toggleCheats = document.getElementById('toggle-cheats');
+    const cheatToolsGrid = document.getElementById('cheat-tools-grid');
+    const toolButtons = document.querySelectorAll('.tool-btn');
+    const toolHint = document.getElementById('tool-hint');
+
+    const toolHintsMap = {
+      inspect: "Клик по полю: Пауза / Старт. Клик по бактерии: анализ ТТХ.",
+      food: "[ЧИТ] Кликайте или ведите по полю, чтобы вбросить руны биомассы.",
+      alpha: "[ЧИТ] Посев бактерий штамма Radiant в указанной точке.",
+      beta: "[ЧИТ] Посев бактерий штамма Dire в указанной точке.",
+      antibiotic: "[ЧИТ] Создать зону лизиса мембран (осквернение)."
+    };
+
+    toggleCheats.addEventListener('change', (e) => {
+      cheatsEnabled = e.target.checked;
+      if (cheatsEnabled) {
+        cheatToolsGrid.classList.remove('opacity-40', 'pointer-events-none');
+        showNotification("⚡ Режим читов ВКЛЮЧЕН");
+      } else {
+        cheatToolsGrid.classList.add('opacity-40', 'pointer-events-none');
+        document.getElementById('btn-inspect-tool').click();
+        showNotification("🔒 Режим читов ВЫКЛЮЧЕН");
+      }
+    });
+
+    toolButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        toolButtons.forEach(b => {
+          b.classList.remove('active', 'border-amber-500', 'bg-amber-500/10', 'text-amber-300');
+          b.classList.add('border-slate-800', 'bg-slate-800/40', 'text-slate-300');
+        });
+        btn.classList.add('active', 'border-amber-500', 'bg-amber-500/10', 'text-amber-300');
+        btn.classList.remove('border-slate-800', 'bg-slate-800/40', 'text-slate-300');
+        currentTool = btn.dataset.tool;
+        toolHint.innerText = toolHintsMap[currentTool] || "";
+      });
+    });
+
+    const speedButtons = document.querySelectorAll('.speed-btn');
+    speedButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        speedButtons.forEach(b => {
+          b.classList.remove('bg-amber-600/90', 'text-amber-100', 'font-bold');
+          b.classList.add('text-slate-400');
+        });
+        btn.classList.add('bg-amber-600/90', 'text-amber-100', 'font-bold');
+        btn.classList.remove('text-slate-400');
+        timeScale = parseFloat(btn.dataset.speed);
+        showNotification(`Скорость времени: ${timeScale}x`);
+      });
+    });
+
+    function updateInspectorUI() {
+      const emptyEl = document.getElementById('inspector-empty');
+      const dataEl = document.getElementById('inspector-data');
+      if (!selectedBacterium || selectedBacterium.dead) {
+        emptyEl.classList.remove('hidden');
+        dataEl.classList.add('hidden');
+        return;
+      }
+      emptyEl.classList.add('hidden');
+      dataEl.classList.remove('hidden');
+
+      const isAlpha = selectedBacterium.strain === 'alpha';
+      const strainEl = document.getElementById('insp-strain');
+      strainEl.innerText = isAlpha ? "Radiant" : "Dire";
+      strainEl.className = isAlpha ? "text-emerald-400 font-bold" : "text-rose-400 font-bold";
+
+      const speciesEl = document.getElementById('insp-species');
+      if (speciesEl) {
+        speciesEl.innerText = `${selectedBacterium.spec.badge}`;
+        speciesEl.className = isAlpha ? "text-emerald-300 font-bold" : "text-rose-300 font-bold";
+      }
+
+      document.getElementById('insp-age').innerText = `${Math.floor(selectedBacterium.age)}с / ${Math.floor(selectedBacterium.lifespan)}с`;
+      document.getElementById('insp-kills').innerText = selectedBacterium.kills;
+
+      const energyPct = Math.round(selectedBacterium.energy * 100);
+      document.getElementById('insp-energy-text').innerText = `${energyPct}%`;
+      const bar = document.getElementById('insp-energy-bar');
+      bar.style.width = `${energyPct}%`;
+      bar.className = `h-full rounded-full transition-all duration-300 ${energyPct > 50 ? (isAlpha ? 'bg-emerald-500' : 'bg-rose-500') : (energyPct > 25 ? 'bg-amber-500' : 'bg-rose-700')}`;
+
+      const mutList = [];
+      const m = selectedBacterium.mutations;
+      if (m.damageBonus > 0) mutList.push(`⚔️ Урон +${Math.round(m.damageBonus * 100)}%`);
+      if (m.defenseBonus > 0) mutList.push(`🛡️ Броня +${Math.round(m.defenseBonus * 100)}%`);
+      if (m.speedBonus > 0) mutList.push(`⚡ Скорость +${Math.round(m.speedBonus * 100)}%`);
+      if (m.lifespanBonus > 0) mutList.push(`⏳ Срок +${Math.round(m.lifespanBonus * 100)}%`);
+      if (selectedBacterium.timeEvoBonus > 0.01) {
+        mutList.push(`⏳ Эволюция времени: +${Math.round(selectedBacterium.timeEvoBonus * 100)}%`);
+      }
+      
+      const mutEl = document.getElementById('insp-mutations');
+      if (mutList.length > 0) {
+        mutEl.innerHTML = mutList.join('<br>');
+        mutEl.className = "text-amber-300 font-mono text-[9px] leading-tight font-semibold";
+      } else {
+        mutEl.innerText = "Базовый геном (без мутаций)";
+        mutEl.className = "text-slate-400 font-mono text-[9px] leading-tight";
+      }
+
+      let statusText = "Поиск";
+      let statusClass = "text-cyan-400";
+      const b = selectedBacterium;
+
+      if (b.inCombat) {
+        statusText = "⚔️ В бою!"; statusClass = "text-rose-400 font-bold animate-pulse";
+      } else if (b.isDividing) {
+        statusText = "🧬 Деление клетки"; statusClass = "text-emerald-300 font-bold";
+      } else if (b.currentBehavior === 'guard_defense') {
+        statusText = "🛡️ Страж кормушки: отражение атаки на трон!"; statusClass = "text-amber-400 font-bold animate-pulse";
+      } else if (b.isFeederGuard) {
+        const poleNum = (b.guardPole === 0) ? "Полюс 1" : "Полюс 2";
+        statusText = `🛡️ Страж кормушки (${poleNum}): сбор урожая и деление`; statusClass = "text-emerald-300 font-semibold";
+      } else if (b.currentBehavior === 'swarm_invasion') {
+        statusText = `🚨 Великий поход (${b.groupSize}): Вторжение на базу врага!`; statusClass = "text-amber-300 font-bold animate-pulse";
+      } else if (b.currentBehavior === 'swarm_assault_tower') {
+        statusText = `🚨 Орда (${b.groupSize}): Сокрушение башни на пути!`; statusClass = "text-purple-400 font-bold animate-pulse";
+      } else if (b.currentBehavior === 'swarm_attack_enemy') {
+        statusText = `🚨 Орда (${b.groupSize}): Сметание защитников!`; statusClass = "text-rose-400 font-bold animate-pulse";
+      } else if (b.currentBehavior === 'flee') {
+        statusText = "🏃 Одиночка (избегает боя)"; statusClass = "text-amber-400 font-bold";
+      } else if (b.currentBehavior === 'flee_neutral') {
+        statusText = "⚠️ Лесной страж силен (обход)"; statusClass = "text-purple-300 font-semibold";
+      } else if (b.currentBehavior === 'flee_tower') {
+        statusText = "⚠️ Башня опасна (отход)"; statusClass = "text-amber-300 font-semibold";
+      } else if (b.currentBehavior === 'forage_group') {
+        statusText = `🌾 Стая (${b.groupSize}): тяга к корму`; statusClass = "text-yellow-300 font-semibold";
+      } else if (b.currentBehavior === 'forage') {
+        statusText = "🌾 Одиночка: тяга к корму"; statusClass = "text-yellow-300 font-semibold";
+      } else if (b.currentBehavior === 'attack_enemy') {
+        statusText = `⚔️ Стая (${b.groupSize}): атака врагов`; statusClass = "text-rose-400 font-bold";
+      } else if (b.currentBehavior === 'attack_neutral') {
+        statusText = `🌲 Стая (${b.groupSize}): штурм лагеря (сила > 50% HP)`; statusClass = "text-purple-400 font-bold";
+      } else if (b.currentBehavior === 'attack_tower') {
+        statusText = `💥 Стая (${b.groupSize}): штурм башни (сила > 50% HP)`; statusClass = "text-purple-400 font-bold";
+      } else if (b.currentBehavior === 'push_base') {
+        statusText = `🏰 Стая (${b.groupSize}): пожирание кормушки!`; statusClass = "text-amber-400 font-bold";
+      } else if (b.currentBehavior === 'seek_allies') {
+        statusText = "👥 Одиночка: поиск стаи"; statusClass = "text-cyan-300";
+      }
+
+      const statusEl = document.getElementById('insp-status');
+      statusEl.innerText = statusText;
+      statusEl.className = statusClass;
+    }
+
+    const tuneTabs = document.querySelectorAll('.tune-tab-btn');
+    const tuneSliderSpeed = document.getElementById('tune-slider-speed');
+    const tuneSliderDamage = document.getElementById('tune-slider-damage');
+    const tuneSliderDefense = document.getElementById('tune-slider-defense');
+    const tuneSliderLifespan = document.getElementById('tune-slider-lifespan');
+
+    const tuneValSpeed = document.getElementById('tune-val-speed');
+    const tuneValDamage = document.getElementById('tune-val-damage');
+    const tuneValDefense = document.getElementById('tune-val-defense');
+    const tuneValLifespan = document.getElementById('tune-val-lifespan');
+
+    function syncSpeciesSlidersUI() {
+      const spec = SPECIES_CONFIG[activeTuningSpecies];
+      tuneSliderSpeed.value = spec.speedBonus;
+      tuneSliderDamage.value = spec.damageMult;
+      tuneSliderDefense.value = spec.defenseMult;
+      tuneSliderLifespan.value = spec.lifespanMult;
+
+      tuneValSpeed.innerText = `${spec.speedBonus.toFixed(2)}x`;
+      tuneValDamage.innerText = `${spec.damageMult.toFixed(2)}x`;
+      tuneValDefense.innerText = `${Math.round(spec.defenseMult * 100)}%`;
+      tuneValLifespan.innerText = `${Math.round(spec.lifespanMult * 100)}%`;
+    }
+
+    tuneTabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (simStarted) return;
+        tuneTabs.forEach(b => {
+          b.classList.remove('bg-amber-600/30', 'text-amber-300', 'font-semibold', 'border', 'border-amber-500/40');
+          b.classList.add('text-slate-400');
+        });
+        btn.classList.add('bg-amber-600/30', 'text-amber-300', 'font-semibold', 'border', 'border-amber-500/40');
+        btn.classList.remove('text-slate-400');
+        activeTuningSpecies = btn.dataset.tuneSpec;
+        syncSpeciesSlidersUI();
+      });
+    });
+
+    tuneSliderSpeed.addEventListener('input', (e) => {
+      if (simStarted) return;
+      const v = parseFloat(e.target.value);
+      SPECIES_CONFIG[activeTuningSpecies].speedBonus = v;
+      tuneValSpeed.innerText = `${v.toFixed(2)}x`;
+    });
+
+    tuneSliderDamage.addEventListener('input', (e) => {
+      if (simStarted) return;
+      const v = parseFloat(e.target.value);
+      SPECIES_CONFIG[activeTuningSpecies].damageMult = v;
+      tuneValDamage.innerText = `${v.toFixed(2)}x`;
+    });
+
+    tuneSliderDefense.addEventListener('input', (e) => {
+      if (simStarted) return;
+      const v = parseFloat(e.target.value);
+      SPECIES_CONFIG[activeTuningSpecies].defenseMult = v;
+      tuneValDefense.innerText = `${Math.round(v * 100)}%`;
+    });
+
+    tuneSliderLifespan.addEventListener('input', (e) => {
+      if (simStarted) return;
+      const v = parseFloat(e.target.value);
+      SPECIES_CONFIG[activeTuningSpecies].lifespanMult = v;
+      tuneValLifespan.innerText = `${Math.round(v * 100)}%`;
+    });
+
+    document.getElementById('btn-reset-species-stats').addEventListener('click', () => {
+      if (simStarted) return;
+      Object.keys(DEFAULT_SPECIES_STATS).forEach(key => {
+        SPECIES_CONFIG[key] = JSON.parse(JSON.stringify(DEFAULT_SPECIES_STATS[key]));
+      });
+      syncSpeciesSlidersUI();
+      showNotification("ТТХ видов сброшены к сбалансированным значениям (k=2.20)");
+    });
+
+    const startOverlay = document.getElementById('start-overlay');
+    const btnStart = document.getElementById('btn-start-simulation');
+
+    btnStart.addEventListener('click', () => {
+      initAudio();
+      simStarted = true;
+      setSpeciesConfigLocked(true);
+      startOverlay.classList.add('opacity-0', 'pointer-events-none');
+      setTimeout(() => startOverlay.classList.add('hidden'), 300);
+      setSimulationRunning(true);
+      showNotification("Битва началась! Штаммы зафиксированы до конца матча.");
+    });
+
+    const playBtn = document.getElementById('btn-play-pause');
+    const playIcon = document.getElementById('play-icon');
+    const playText = document.getElementById('play-text');
+    const pauseOverlay = document.getElementById('pause-overlay');
+
+    function setSimulationRunning(running) {
+      if (!simStarted && running) { btnStart.click(); return; }
+      isRunning = running;
+      if (isRunning) {
+        playIcon.className = "fa-solid fa-pause text-xs";
+        playText.innerText = "Пауза";
+        pauseOverlay.classList.add('hidden');
+      } else {
+        playIcon.className = "fa-solid fa-play text-xs";
+        playText.innerText = "Старт";
+        if (simStarted && !matchEnded) pauseOverlay.classList.remove('hidden');
+      }
+    }
+
+    playBtn.addEventListener('click', () => setSimulationRunning(!isRunning));
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') { e.preventDefault(); setSimulationRunning(!isRunning); }
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      stopVictoryFx();
+      simStarted = false;
+      matchEnded = false;
+      setSpeciesConfigLocked(false);
+      initColony();
+      syncOpponentSelectorLabels();
+      setSimulationRunning(false);
+      startOverlay.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+      pauseOverlay.classList.add('hidden');
+      document.getElementById('victory-modal').classList.add('hidden');
+      showNotification("Арена сброшена к исходному состоянию.");
+    });
+
+    const soundBtn = document.getElementById('btn-toggle-sound');
+    const soundIcon = document.getElementById('sound-icon');
+    soundBtn.addEventListener('click', () => {
+      initAudio();
+      isAudioEnabled = !isAudioEnabled;
+      if (isAudioEnabled) {
+        soundIcon.className = "fa-solid fa-volume-high text-amber-400 text-xs sm:text-sm";
+        showNotification("Звуки включены");
+      } else {
+        soundIcon.className = "fa-solid fa-volume-xmark text-slate-400 text-xs sm:text-sm";
+        showNotification("Звуки выключены");
+      }
+    });
+
+    const setupSlider = (id, valId, formatFn, callback) => {
+      const slider = document.getElementById(id);
+      const valLabel = document.getElementById(valId);
+      if (!slider || !valLabel) return;
+      slider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        valLabel.innerText = formatFn(val);
+        callback(val);
+      });
+    };
+
+    setupSlider('slider-lifespan', 'val-lifespan', v => `${v} сек`, v => { CONFIG.lifespanSeconds = v; });
+    setupSlider('slider-repro', 'val-repro', v => `${v}%`, v => { CONFIG.reproductionEnergyThreshold = v / 100; });
+    setupSlider('slider-feeder-int', 'val-feeder-int', v => `${v.toFixed(1)} сек`, v => { CONFIG.feederInterval = v; });
+    setupSlider('slider-damage', 'val-damage', v => `${v.toFixed(1)}x`, v => { CONFIG.combatDamageMultiplier = v; });
+    setupSlider('slider-feeder', 'val-feeder', v => v === 0 ? "Выкл" : (v > 5 ? "Обильный" : "Умеренный"), v => { CONFIG.autoFeedRate = v; });
+
+    document.getElementById('btn-default-params').addEventListener('click', () => {
+      document.getElementById('slider-lifespan').value = 130;
+      document.getElementById('val-lifespan').innerText = "130 сек";
+      CONFIG.lifespanSeconds = 130;
+
+      document.getElementById('slider-repro').value = 75;
+      document.getElementById('val-repro').innerText = "75%";
+      CONFIG.reproductionEnergyThreshold = 0.75;
+
+      document.getElementById('slider-feeder-int').value = 4.0;
+      document.getElementById('val-feeder-int').innerText = "4.0 сек";
+      CONFIG.feederInterval = 4.0;
+
+      document.getElementById('slider-damage').value = 1.8;
+      document.getElementById('val-damage').innerText = "1.8x";
+      CONFIG.combatDamageMultiplier = 1.8;
+
+      document.getElementById('slider-feeder').value = 3;
+      document.getElementById('val-feeder').innerText = "Умеренный";
+      CONFIG.autoFeedRate = 3;
+
+      showNotification("Параметры сброшены по умолчанию");
+    });
+
+    function updateChart() {
+      const dpr = window.devicePixelRatio || 1;
+      const w = chartCanvas.width / dpr;
+      const h = chartCanvas.height / dpr;
+
+      chartCtx.clearRect(0, 0, w, h);
+      chartCtx.strokeStyle = 'rgba(51, 65, 85, 0.3)';
+      chartCtx.lineWidth = 1;
+      chartCtx.beginPath();
+      for (let y = 0; y < h; y += h / 3) {
+        chartCtx.moveTo(0, y);
+        chartCtx.lineTo(w, y);
+      }
+      chartCtx.stroke();
+
+      if (chartHistory.alpha.length < 2) return;
+      const maxVal = Math.max(30, ...chartHistory.alpha, ...chartHistory.beta);
+
+      chartCtx.beginPath();
+      chartHistory.alpha.forEach((val, idx) => {
+        const x = (idx / (chartHistory.capacity - 1)) * w;
+        const y = h - (val / maxVal) * (h - 10) - 5;
+        if (idx === 0) chartCtx.moveTo(x, y); else chartCtx.lineTo(x, y);
+      });
+      chartCtx.strokeStyle = '#10b981';
+      chartCtx.lineWidth = 2;
+      chartCtx.stroke();
+
+      chartCtx.beginPath();
+      chartHistory.beta.forEach((val, idx) => {
+        const x = (idx / (chartHistory.capacity - 1)) * w;
+        const y = h - (val / maxVal) * (h - 10) - 5;
+        if (idx === 0) chartCtx.moveTo(x, y); else chartCtx.lineTo(x, y);
+      });
+      chartCtx.strokeStyle = '#f43f5e';
+      chartCtx.lineWidth = 2;
+      chartCtx.stroke();
+    }
+
+    function drawMapTerrain(c, w, h) {
+      c.fillStyle = '#060a0f';
+      c.fillRect(0, 0, w, h);
+
+      c.fillStyle = 'rgba(15, 23, 42, 0.4)';
+      c.beginPath();
+      for (let i = 0; i < 40; i++) {
+        const sx = (Math.sin(i * 123) * 0.5 + 0.5) * w;
+        const sy = (Math.cos(i * 321) * 0.5 + 0.5) * h;
+        c.arc(sx, sy, 50 + (i % 5) * 16, 0, Math.PI * 2);
+      }
+      c.fill();
+
+      // Река
+      c.save();
+      c.beginPath();
+      c.moveTo(580, 1120);
+      c.bezierCurveTo(750, 800, 1170, 280, 1340, -40);
+      c.strokeStyle = 'rgba(23, 37, 54, 0.95)';
+      c.lineWidth = 140;
+      c.lineCap = 'round';
+      c.stroke();
+
+      const riverGrad = c.createLinearGradient(580, 1120, 1340, -40);
+      riverGrad.addColorStop(0, '#042233');
+      riverGrad.addColorStop(0.5, '#073b54');
+      riverGrad.addColorStop(1, '#042233');
+      c.strokeStyle = riverGrad;
+      c.lineWidth = 105;
+      c.stroke();
+
+      c.strokeStyle = 'rgba(14, 165, 233, 0.28)';
+      c.lineWidth = 50;
+      c.stroke();
+      c.restore();
+
+      // Линии
+      lanes.forEach(lane => {
+        c.save();
+        c.beginPath();
+        lane.points.forEach((p, idx) => {
+          if (idx === 0) c.moveTo(p.x, p.y); else c.lineTo(p.x, p.y);
+        });
+        c.lineCap = 'round';
+        c.lineJoin = 'round';
+        c.strokeStyle = 'rgba(25, 36, 51, 0.95)';
+        c.lineWidth = lane.width * 1.8;
+        c.stroke();
+
+        c.strokeStyle = 'rgba(14, 116, 144, 0.25)';
+        c.lineWidth = lane.width * 1.1;
+        c.stroke();
+
+        c.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+        c.lineWidth = 4;
+        c.setLineDash([12, 14]);
+        c.stroke();
+        c.restore();
+      });
+
+      // Базовые плазы
+      c.save();
+      c.beginPath();
+      c.arc(190, 190, 110, 0, Math.PI * 2);
+      c.fillStyle = 'rgba(12, 26, 22, 0.95)';
+      c.strokeStyle = 'rgba(16, 185, 129, 0.45)';
+      c.lineWidth = 3;
+      c.fill(); c.stroke();
+
+      c.beginPath();
+      c.arc(1730, 890, 110, 0, Math.PI * 2);
+      c.fillStyle = 'rgba(26, 14, 18, 0.95)';
+      c.strokeStyle = 'rgba(244, 63, 94, 0.45)';
+      c.lineWidth = 3;
+      c.fill(); c.stroke();
+      c.restore();
+
+      // Лесные лагеря
+      neutralCamps.forEach(camp => {
+        c.save();
+        c.beginPath();
+        c.arc(camp.x, camp.y, 48, 0, Math.PI * 2);
+        c.fillStyle = 'rgba(8, 20, 16, 0.8)';
+        c.fill();
+
+        for (let i = 0; i < 7; i++) {
+          const a = (i / 7) * Math.PI * 2;
+          c.beginPath();
+          c.arc(camp.x + Math.cos(a) * 40, camp.y + Math.sin(a) * 40, 10, 0, Math.PI * 2);
+          c.fillStyle = 'rgba(12, 32, 26, 0.92)';
+          c.strokeStyle = 'rgba(34, 197, 94, 0.35)';
+          c.lineWidth = 1.2;
+          c.fill(); c.stroke();
+        }
+
+        c.beginPath();
+        c.arc(camp.x, camp.y, 22, 0, Math.PI * 2);
+        c.fillStyle = 'rgba(168, 85, 247, 0.04)';
+        c.strokeStyle = 'rgba(192, 132, 252, 0.22)';
+        c.lineWidth = 1.0;
+        c.setLineDash([3, 4]);
+        c.stroke(); c.fill();
+
+        c.beginPath();
+        c.arc(camp.x, camp.y, 5, 0, Math.PI * 2);
+        c.fillStyle = '#7e22ce';
+        c.fill();
+        c.restore();
+      });
+
+      // Рунические точки
+      fixedFoodSpawners.forEach(spawner => {
+        c.save();
+        c.beginPath();
+        c.arc(spawner.x, spawner.y, 20, 0, Math.PI * 2);
+        c.fillStyle = 'rgba(234, 179, 8, 0.08)';
+        c.strokeStyle = 'rgba(234, 179, 8, 0.4)';
+        c.lineWidth = 2;
+        c.stroke(); c.fill();
+
+        c.beginPath();
+        c.moveTo(spawner.x, spawner.y - 6);
+        c.lineTo(spawner.x + 5, spawner.y);
+        c.lineTo(spawner.x, spawner.y + 6);
+        c.lineTo(spawner.x - 5, spawner.y);
+        c.closePath();
+        c.fillStyle = 'rgba(253, 224, 71, 0.7)';
+        c.fill();
+        c.restore();
+      });
+    }
+
+    let lastTimestamp = performance.now();
+
+    function animate(now) {
+      requestAnimationFrame(animate);
+
+      const realDt = Math.min((now - lastTimestamp) / 1000, 0.1);
+      lastTimestamp = now;
+      const dt = realDt * timeScale;
+
+      if (isRunning && !matchEnded) {
+        simulationTime += dt;
+
+        updateFeederGuards();
+
+        for (let feeder of feeders) feeder.update(dt);
+
+        for (let spawner of fixedFoodSpawners) {
+          spawner.timer += dt;
+          if (spawner.timer >= spawner.interval) {
+            spawner.timer = 0;
+            if (foods.length < 750) {
+              for (let i = 0; i < spawner.count; i++) {
+                foods.push(new Food(spawner.x + (Math.random() - 0.5) * 45, spawner.y + (Math.random() - 0.5) * 45));
+              }
+            }
+          }
+        }
+
+        for (let sb of superBacteria) {
+          const enemyStrain = sb.strain === 'alpha' ? 'beta' : 'alpha';
+          sb.update(dt, colony.filter(b => b.strain === enemyStrain));
+        }
+
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+          projectiles[i].update(dt);
+          if (projectiles[i].dead) projectiles.splice(i, 1);
+        }
+
+        for (let n of neutrals) n.update(dt, colony);
+
+        for (let i = antibiotics.length - 1; i >= 0; i--) {
+          antibiotics[i].update(dt);
+          if (antibiotics[i].life <= 0) antibiotics.splice(i, 1);
+        }
+
+        for (let f of foods) f.update();
+
+        for (let i = sparks.length - 1; i >= 0; i--) {
+          sparks[i].update();
+          if (sparks[i].life <= 0) sparks.splice(i, 1);
+        }
+
+        for (let i = colony.length - 1; i >= 0; i--) {
+          const b = colony[i];
+          b.update(dt, foods, antibiotics, colony, superBacteria, neutrals);
+          if (b.dead && b.opacity <= 0) {
+            if (selectedBacterium === b) selectedBacterium = null;
+            colony.splice(i, 1);
+          }
+        }
+
+        if (simulationTime - chartHistory.lastSampleTime >= 1.0) {
+          chartHistory.lastSampleTime = simulationTime;
+          const countAlpha = colony.filter(b => b.strain === 'alpha' && !b.dead).length;
+          const countBeta = colony.filter(b => b.strain === 'beta' && !b.dead).length;
+          
+          chartHistory.alpha.push(countAlpha);
+          chartHistory.beta.push(countBeta);
+          fullMatchHistory.alpha.push(countAlpha);
+          fullMatchHistory.beta.push(countBeta);
+
+          if (chartHistory.alpha.length > chartHistory.capacity) {
+            chartHistory.alpha.shift();
+            chartHistory.beta.shift();
+          }
+          updateChart();
+          updateInspectorUI();
+
+          if (simStarted && simulationTime > 2.0) {
+            if (countAlpha === 0 && countBeta > 0) triggerMatchVictory('beta');
+            else if (countBeta === 0 && countAlpha > 0) triggerMatchVictory('alpha');
+          }
+        }
+      }
+
+      const dpr = window.devicePixelRatio || 1;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const renderScale = canvasScale * dpr;
+      ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+
+      drawMapTerrain(ctx, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+      for (let ab of antibiotics) ab.draw(ctx);
+      for (let sb of superBacteria) sb.draw(ctx);
+      for (let p of projectiles) p.draw(ctx);
+      for (let n of neutrals) n.draw(ctx);
+      for (let feeder of feeders) feeder.draw(ctx);
+      for (let f of foods) f.draw(ctx);
+      for (let b of colony) b.draw(ctx);
+      for (let s of sparks) s.draw(ctx);
+
+      const alphaCount = colony.filter(b => b.strain === 'alpha' && !b.dead).length;
+      const betaCount = colony.filter(b => b.strain === 'beta' && !b.dead).length;
+      document.getElementById('stat-alpha').innerText = alphaCount;
+      document.getElementById('stat-beta').innerText = betaCount;
+      
+      const mins = Math.floor(simulationTime / 60).toString().padStart(2, '0');
+      const secs = Math.floor(simulationTime % 60).toString().padStart(2, '0');
+      document.getElementById('stat-time').innerText = `${mins}:${secs}`;
+    }
+
+    window.addEventListener('load', () => {
+      initAudio();
+      resizeCanvases();
+      initColony();
+      syncSpeciesSlidersUI();
+      syncOpponentSelectorLabels();
+      setSpeciesConfigLocked(false);
+      window.addEventListener('resize', () => {
+        resizeCanvases();
+        updateChart();
+      });
+      requestAnimationFrame(animate);
+    });
+  </script>
+</body>
+</html>
